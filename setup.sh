@@ -69,10 +69,14 @@ exec > >(tee -a "${LOG_FILE}") 2>&1
 # Set non-interactive mode for apt-get
 export DEBIAN_FRONTEND=noninteractive
 
+# Create temporary directory for setup scripts
+local tmp_dir="/tmp/server-setup"
+mkdir -p "$tmp_dir"
+
 # Run setup modules
 download_and_run() {
     local script="$1"
-    local tmp_file="/tmp/$script"
+    local tmp_file="$tmp_dir/$script"
     curl -fsSL "$BASE_URL/$script" -o "$tmp_file"
     chmod +x "$tmp_file"
     bash "$tmp_file"
