@@ -1,28 +1,21 @@
 #!/bin/bash
 set -e
+set -u
 
 BASE_URL="https://raw.githubusercontent.com/christianwhocodes/server-setup/main/scripts"
-
-download_and_source() {
-    source <(curl -fsSL "$BASE_URL/$1")
-}
-
-download_and_run() {
-    curl -fsSL "$BASE_URL/$1" | bash
-}
 
 # Interactive config and export vars
 echo "=== Server Setup Configuration ==="
 echo ""
 
-# username prompt
+# USERNAME prompt
 read -p "Enter the username to create: " USERNAME
 if [ -z "$USERNAME" ]; then
   echo "Username cannot be empty"
   exit 1
 fi
 
-# password prompt
+# PASSWORD prompt
 echo "Enter password for user '$USERNAME':"
 read -s PASSWORD
 if [ -z "$PASSWORD" ]; then
@@ -30,7 +23,7 @@ if [ -z "$PASSWORD" ]; then
   exit 1
 fi
 
-# confirm password prompt
+# PASSWORD_CONFIRM prompt
 echo "Confirm password for user '$USERNAME':"
 read -s PASSWORD_CONFIRM
 if [ "$PASSWORD" != "$PASSWORD_CONFIRM" ]; then
@@ -38,7 +31,15 @@ if [ "$PASSWORD" != "$PASSWORD_CONFIRM" ]; then
   exit 1
 fi
 
-# code-server port prompt
+# SUDO_PRIVILEGES prompt
+read -p "Should the user '$USERNAME' have sudo privileges? (y/N): " SUDO_PRIVILEGES
+if [[ "$SUDO_PRIVILEGES" =~ ^[Yy]$ ]]; then
+  SUDO_PRIVILEGES=true
+else
+  SUDO_PRIVILEGES=false
+fi
+
+# CODE_SERVER_PORT prompt
 read -p "Enter port for code-server (default: 8080): " CODE_SERVER_PORT
 CODE_SERVER_PORT=${CODE_SERVER_PORT:-8080}
 
@@ -62,19 +63,23 @@ mkdir -p "$(dirname "$LOG_FILE")"
 touch "$LOG_FILE"
 exec > >(tee -a "${LOG_FILE}") 2>&1
 
-# Export variables for use in scripts
-export USERNAME PASSWORD CODE_SERVER_PORT
+# Set non-interactive mode for apt-get
+export DEBIAN_FRONTEND=noninteractive
 
 # Run setup modules
+download_and_run() {
+    sudo USERNAME="$USERNAME" PASSWORD="$PASSWORD" SUDO_PRIVILEGES="$SUDO_PRIVILEGES" CODE_SERVER_PORT="$CODE_SERVER_PORT" bash <(curl -fsSL "$BASE_URL/$1")
+}
+
 download_and_run "user-setup.sh"
 download_and_run "install-packages.sh"
 download_and_run "code-server.sh"
 download_and_run "postgres.sh"
 download_and_run "nginx.sh"
 download_and_run "certbot.sh"
-download_and_run "bash-aliases.sh"
 download_and_run "nvm.sh"
 download_and_run "pyenv.sh"
+download_and_run "bash-aliases.sh"
 
 # Finalize setup
 echo "✅ Server setup complete at $(date)"
