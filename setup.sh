@@ -70,7 +70,7 @@ exec > >(tee -a "${LOG_FILE}") 2>&1
 export DEBIAN_FRONTEND=noninteractive
 
 # Create temporary directory for setup scripts
-local tmp_dir="/tmp/server-setup"
+tmp_dir="/tmp/server-setup"
 mkdir -p "$tmp_dir"
 
 # Run setup modules
@@ -80,7 +80,6 @@ download_and_run() {
     curl -fsSL "$BASE_URL/$script" -o "$tmp_file"
     chmod +x "$tmp_file"
     bash "$tmp_file"
-    rm "$tmp_file"
 }
 
 download_and_run "user-setup.sh"
@@ -92,6 +91,9 @@ download_and_run "certbot.sh"
 download_and_run "nvm.sh"
 download_and_run "pyenv.sh"
 download_and_run "bash-aliases.sh"
+
+# Cleanup
+rm -rf "$tmp_dir"
 
 # Finalize setup
 echo "✅ Server setup complete at $(date)"
