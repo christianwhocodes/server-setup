@@ -1,7 +1,6 @@
 #!/bin/bash
 set -e
-
-export DEBIAN_FRONTEND=noninteractive
+set -u
 
 apt update && apt upgrade -y
 
