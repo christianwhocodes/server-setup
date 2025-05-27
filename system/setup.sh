@@ -1,0 +1,60 @@
+#!/bin/bash
+set -e
+
+# ################# Variables and Functions ################# 
+
+export DEBIAN_FRONTEND=noninteractive
+
+SETUP_TYPE="system"
+
+TMP_DIR="/tmp/server-setup/$SETUP_TYPE"
+mkdir -p "$TMP_DIR"
+
+BASE_URL="https://raw.githubusercontent.com/christianwhocodes/server-setup/main/$SETUP_TYPE/scripts"
+
+download_and_run() {
+    local script="$1"
+    local tmp_file="$TMP_DIR/$script"
+    curl -fsSL "$BASE_URL/$script" -o "$tmp_file"
+    chmod +x "$tmp_file"
+    bash "$tmp_file"
+}
+
+# ################# Start of the script #################
+
+echo "=== Start Setup ($SETUP_TYPE) Configuration ==="
+echo ""
+
+# Update and Upgrade the system
+apt update && apt upgrade -y
+
+# Allow SSH connections and enable UFW
+ufw allow OpenSSH
+ufw --force enable
+
+# Set up code-server
+curl -fsSL https://code-server.dev/install.sh | sh
+
+# Set up nginx
+download_and_run "nginx.sh"
+
+# Set up certbot for SSL certificates
+download_and_run "certbot.sh"
+
+# Set up PostgreSQL
+download_and_run "postgres.sh"
+
+# Set up Necessary packages
+download_and_run "necessary-packages.sh"
+
+# Cleanup
+rm -rf "$TMP_DIR"
+
+# Final message
+echo "=== ✅ Finished Setup ($SETUP_TYPE) Configuration ==="
+echo ""
+echo ""
+echo "It is recommended you reboot the system as some system updates may require rebooting the server to take effect.";
+echo "You can do this by running 'sudo reboot' or 'sudo shutdown -r now'."
+
+# ################# End of the script #################

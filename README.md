@@ -1,50 +1,5 @@
-# server-setup
-Automated setup script for remote Linux (Ubuntu) servers - installs users, Python, Node.js, PostgreSQL, Nginx, and code-server
+# Server Setup
+Automated setup script for a remote Linux (Ubuntu) server.
 
-## Usage
-
-### Quick Setup
-Run this single command on your fresh Ubuntu server to automatically configure everything:
-
-```bash
-bash -c "$(curl -sSL https://raw.githubusercontent.com/christianwhocodes/server-setup/main/init.sh)"
-```
-
-### Alternative (Safer) Method
-If you prefer to review the script before running it:
-
-```bash
-# Download the script
-curl -O https://raw.githubusercontent.com/christianwhocodes/server-setup/main/init.sh
-
-# Review the script
-cat init.sh
-
-# Make it executable and run
-chmod +x init.sh
-sudo ./init.sh
-```
-
-## What This Script Does
-
-- Updates system packages
-- Configures firewall (UFW)
-- Installs essential development packages
-- Creates user accounts
-- Sets up PostgreSQL with user databases
-- Installs and configures Nginx
-- Cleans up temporary files
-
-## Requirements
-
-- Fresh Ubuntu server (tested on Ubuntu 20.04/22.04)
-- Root or sudo access
-- Internet connection
-
-## Logs
-
-Setup logs are saved to `/var/log/server-setup.log` for troubleshooting.
-
-## Security Note
-
-This script requires root user to install packages and configure system services. Always review scripts before running them with sudo privileges.
+- [system setup](./system/README.md)
+- [user setup](./user/README.md)
