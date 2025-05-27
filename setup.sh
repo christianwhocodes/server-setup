@@ -3,44 +3,66 @@ set -e
 
 BASE_URL="https://raw.githubusercontent.com/christianwhocodes/server-setup/main/scripts"
 
-# Interactive config and export vars
 echo "=== Server Setup Configuration ==="
 echo ""
 
-# USERNAME prompt
-read -p "Enter the username to create: " USERNAME
+# USERNAME
 if [ -z "$USERNAME" ]; then
-  echo "Username cannot be empty"
-  exit 1
-fi
-
-# PASSWORD prompt
-echo "Enter password for user '$USERNAME':"
-read -s PASSWORD
-if [ -z "$PASSWORD" ]; then
-  echo "Password cannot be empty"
-  exit 1
-fi
-
-# PASSWORD_CONFIRM prompt
-echo "Confirm password for user '$USERNAME':"
-read -s PASSWORD_CONFIRM
-if [ "$PASSWORD" != "$PASSWORD_CONFIRM" ]; then
-  echo "Passwords do not match"
-  exit 1
-fi
-
-# SUDO_PRIVILEGES prompt
-read -p "Should the user '$USERNAME' have sudo privileges? (y/N): " SUDO_PRIVILEGES
-if [[ "$SUDO_PRIVILEGES" =~ ^[Yy]$ ]]; then
-  SUDO_PRIVILEGES=true
+  read -p "Enter the username to create: " USERNAME
+  if [ -z "$USERNAME" ]; then
+    echo "Username cannot be empty"
+    exit 1
+  fi
 else
-  SUDO_PRIVILEGES=false
+  echo "Using USERNAME from environment: $USERNAME"
 fi
 
-# CODE_SERVER_PORT prompt
-read -p "Enter port for code-server (default: 8080): " CODE_SERVER_PORT
-CODE_SERVER_PORT=${CODE_SERVER_PORT:-8080}
+# PASSWORD
+if [ -z "$PASSWORD" ]; then
+  echo "Enter password for user '$USERNAME':"
+  read -s PASSWORD
+  if [ -z "$PASSWORD" ]; then
+    echo "Password cannot be empty"
+    exit 1
+  fi
+else
+  echo "Using PASSWORD from environment"
+fi
+
+# PASSWORD_CONFIRM
+if [ -z "$PASSWORD_CONFIRM" ]; then
+  echo "Confirm password for user '$USERNAME':"
+  read -s PASSWORD_CONFIRM
+  if [ "$PASSWORD" != "$PASSWORD_CONFIRM" ]; then
+    echo "Passwords do not match"
+    exit 1
+  fi
+else
+  if [ "$PASSWORD" != "$PASSWORD_CONFIRM" ]; then
+    echo "Passwords do not match"
+    exit 1
+  fi
+fi
+
+# SUDO_PRIVILEGES
+if [ -z "$SUDO_PRIVILEGES" ]; then
+  read -p "Should the user '$USERNAME' have sudo privileges? (y/N): " SUDO_PRIVILEGES
+  if [[ "$SUDO_PRIVILEGES" =~ ^[Yy]$ ]]; then
+    SUDO_PRIVILEGES=true
+  else
+    SUDO_PRIVILEGES=false
+  fi
+else
+  echo "Using SUDO_PRIVILEGES from environment: $SUDO_PRIVILEGES"
+fi
+
+# CODE_SERVER_PORT
+if [ -z "$CODE_SERVER_PORT" ]; then
+  read -p "Enter port for code-server (default: 8080): " CODE_SERVER_PORT
+  CODE_SERVER_PORT=${CODE_SERVER_PORT:-8080}
+else
+  echo "Using CODE_SERVER_PORT from environment: $CODE_SERVER_PORT"
+fi
 
 if ! [[ "$CODE_SERVER_PORT" =~ ^[0-9]+$ ]] || [ "$CODE_SERVER_PORT" -lt 1024 ] || [ "$CODE_SERVER_PORT" -gt 65535 ]; then
   echo "Port must be between 1024 and 65535"
@@ -53,8 +75,12 @@ echo "Summary:"
 echo "- Username: $USERNAME"
 echo "- Code-server port: $CODE_SERVER_PORT"
 echo ""
-read -p "Proceed with setup? (y/N): " CONFIRM
-[[ "$CONFIRM" =~ ^[Yy]$ ]] || exit 0
+if [ -z "$AUTO_CONFIRM" ]; then
+  read -p "Proceed with setup? (y/N): " CONFIRM
+  [[ "$CONFIRM" =~ ^[Yy]$ ]] || exit 0
+else
+  echo "Auto-confirm enabled, proceeding..."
+fi
 
 # Setup logging
 LOG_FILE="/var/log/server-setup.log"
