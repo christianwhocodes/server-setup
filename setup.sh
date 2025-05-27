@@ -73,10 +73,12 @@ download_and_run "postgres.sh"
 download_and_run "nginx.sh"
 download_and_run "certbot.sh"
 download_and_run "bash-aliases.sh"
+download_and_run "nvm.sh"
+download_and_run "pyenv.sh"
 
 # Finalize setup
 echo "✅ Server setup complete at $(date)"
 echo "Setup log can be found at ${LOG_FILE}"
-echo "To apply some changes, restart shell by running 'source ~/.bashrc' or opening a new terminal."
+echo "To apply some changes, restart shell by running 'source ~/.bashrc' or 'exec "$SHELL"' or opening a new terminal."
 
 # End of script

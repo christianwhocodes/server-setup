@@ -79,7 +79,7 @@ alias php="sudo service php8.2-fpm"
 
 alias update="sudo apt update && sudo apt -y upgrade && sudo apt autoclean && sudo apt autoremove"
 alias editaliases="nano ~/.bash_aliases"
-alias refresh="source ~/.bashrc"
+alias refresh="source ~/.bashrc and exec \"$SHELL\""
 alias showaliases="cat ~/.bash_aliases"
 alias la="ls -a"
 alias code_server_update="curl -fsSL https://code-server.dev/install.sh | sh"
