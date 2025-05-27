@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 
+rm -f "/home/$USER/.bash_aliases"
+touch "/home/$USER/.bash_aliases"
 cat <<'EOF' > "/home/$USER/.bash_aliases"
 # ======= OS Detection =======
 
