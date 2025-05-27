@@ -21,7 +21,7 @@ cat setup.sh
 
 # Make it executable and run
 chmod +x setup.sh
-sudo ./setup.sh
+bash ./setup.sh
 ```
 
 ## What This Script Does
