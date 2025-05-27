@@ -1,6 +1,5 @@
 #!/bin/bash
 set -e
-set -u
 
 curl -fsSL https://code-server.dev/install.sh | sh
 

@@ -1,6 +1,5 @@
 #!/bin/bash
 set -e
-set -u
 
 cat <<'EOF' > "/home/$USERNAME/.bash_aliases"
 # ======= OS Detection =======

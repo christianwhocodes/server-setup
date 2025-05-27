@@ -1,6 +1,5 @@
 #!/bin/bash
 set -e
-set -u
 
 apt update && apt upgrade -y
 
