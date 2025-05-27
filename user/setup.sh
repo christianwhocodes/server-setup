@@ -7,7 +7,7 @@ export DEBIAN_FRONTEND=noninteractive
 
 SETUP_TYPE="user"
 
-TMP_DIR="/tmp/server-setup/$SETUP_TYPE"
+TMP_DIR="/home/$USER/server-setup/$SETUP_TYPE"
 mkdir -p "$TMP_DIR"
 
 BASE_URL="https://raw.githubusercontent.com/christianwhocodes/server-setup/main/$SETUP_TYPE/scripts"
