@@ -13,6 +13,7 @@ if [ -z "$USERNAME" ]; then
   echo "Username cannot be empty"
   exit 1
 fi
+export USERNAME
 
 # PASSWORD prompt
 echo "Enter password for user '$USERNAME':"
@@ -21,6 +22,7 @@ if [ -z "$PASSWORD" ]; then
   echo "Password cannot be empty"
   exit 1
 fi
+export PASSWORD
 
 # PASSWORD_CONFIRM prompt
 echo "Confirm password for user '$USERNAME':"
@@ -37,10 +39,12 @@ if [[ "$SUDO_PRIVILEGES" =~ ^[Yy]$ ]]; then
 else
   SUDO_PRIVILEGES=false
 fi
+export SUDO_PRIVILEGES
 
 # CODE_SERVER_PORT prompt
 read -p "Enter port for code-server (default: 8080): " CODE_SERVER_PORT
 CODE_SERVER_PORT=${CODE_SERVER_PORT:-8080}
+export CODE_SERVER_PORT
 
 if ! [[ "$CODE_SERVER_PORT" =~ ^[0-9]+$ ]] || [ "$CODE_SERVER_PORT" -lt 1024 ] || [ "$CODE_SERVER_PORT" -gt 65535 ]; then
   echo "Port must be between 1024 and 65535"
@@ -65,12 +69,14 @@ exec > >(tee -a "${LOG_FILE}") 2>&1
 # Set non-interactive mode for apt-get
 export DEBIAN_FRONTEND=noninteractive
 
-# Pass environment variables to scripts
-export USERNAME PASSWORD SUDO_PRIVILEGES CODE_SERVER_PORT
-
 # Run setup modules
 download_and_run() {
-    sudo bash -c "$(curl -fsSL "$BASE_URL/$1")"
+    local script="$1"
+    local tmp_file="/tmp/$script"
+    curl -fsSL "$BASE_URL/$script" -o "$tmp_file"
+    chmod +x "$tmp_file"
+    bash "$tmp_file"
+    rm "$tmp_file"
 }
 
 download_and_run "user-setup.sh"
