@@ -7,7 +7,7 @@ Automated setup script for remote Linux (Ubuntu) servers - installs users, Pytho
 Run this single command on your fresh Ubuntu server to automatically configure everything:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/christianwhocodes/server-setup/main/init.sh | sudo bash
+curl -sSL https://raw.githubusercontent.com/christianwhocodes/server-setup/main/init.sh | bash
 ```
 
 ### Alternative (Safer) Method
