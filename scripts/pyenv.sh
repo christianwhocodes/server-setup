@@ -1,6 +1,5 @@
 #!/bin/bash
 set -e
-set -u
 # https://github.com/pyenv/pyenv
 
 curl https://pyenv.run | bash

@@ -1,6 +1,5 @@
 #!/bin/bash
 set -e
-set -u
 
 # Check for required environment variables
 if [ -z "$USERNAME" ] || [ -z "$PASSWORD" ]; then

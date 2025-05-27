@@ -1,6 +1,5 @@
 #!/bin/bash
 set -e
-set -u
 
 apt install -y nginx
 systemctl enable --now nginx
