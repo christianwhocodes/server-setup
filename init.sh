@@ -98,6 +98,21 @@ rm -rf "$tmp_dir"
 # Finalize setup
 echo "✅ Server setup complete at $(date)"
 echo "Setup log can be found at ${LOG_FILE}"
-echo "To apply some changes, restart shell by running 'source ~/.bashrc' or 'exec "$SHELL"' or opening a new terminal."
+echo "Restart shell by running the alias 'refresh' or opening a new terminal."
+echo ""
+echo ""
+echo "############## Node Js Configuration ##############"
+echo "To install node and npm run 'nvm install node' or 'nvm install <version>'";
+echo "You may want to start by installing some global packages like 'npm install -g npm@latest serve pm2'";
+echo ""
+echo ""
+echo "############## Python Configuration ##############"
+echo "To install python run 'pyenv install <version>' or 'pyenv global <version>'";
+echo "You may want to start by installing some global packages like 'pip install --upgrade pip poetry jupyter'";
+echo ""
+echo ""
+echo "############## Reboot ##############"
+echo "To apply some system updates, it is recommended to reboot the server.";
+echo "You can do this by running 'sudo reboot' or 'sudo shutdown -r now'."
 
 # End of script
