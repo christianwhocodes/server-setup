@@ -80,6 +80,7 @@ echo ""
 echo "############## Code Server ##############"
 echo "Request system admin to enable the code-server service for you.";
 echo "The system admin can run the following command: 'sudo systemctl enable --now code-server@$USER'";
+echp "The system admin can then configure NGINX to reverse proxy to code-server under a domain e.g 'https://developeR.example.com/$USER'";
 echo "You can then access code-server at http://localhost:$CODE_SERVER_PORT";
 
 # ################# End of the script #################
