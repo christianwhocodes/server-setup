@@ -7,7 +7,7 @@ Automated setup script for remote Linux (Ubuntu) servers - installs users, Pytho
 Run this single command on your fresh Ubuntu server to automatically configure everything:
 
 ```bash
-bash -c "$(curl -sSL https://raw.githubusercontent.com/christianwhocodes/server-setup/main/setup.sh)"
+bash -c "$(curl -sSL https://raw.githubusercontent.com/christianwhocodes/server-setup/main/init.sh)"
 ```
 
 ### Alternative (Safer) Method
@@ -15,14 +15,14 @@ If you prefer to review the script before running it:
 
 ```bash
 # Download the script
-curl -O https://raw.githubusercontent.com/christianwhocodes/server-setup/main/setup.sh
+curl -O https://raw.githubusercontent.com/christianwhocodes/server-setup/main/init.sh
 
 # Review the script
-cat setup.sh
+cat init.sh
 
 # Make it executable and run
-chmod +x setup.sh
-sudo ./setup.sh
+chmod +x init.sh
+sudo ./init.sh
 ```
 
 ## What This Script Does
