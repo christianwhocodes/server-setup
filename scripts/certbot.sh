@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+set -u
 
 snap install core && snap refresh core
 apt remove -y certbot || true
