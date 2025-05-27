@@ -71,7 +71,7 @@ export USERNAME PASSWORD SUDO_PRIVILEGES CODE_SERVER_PORT
 
 # Run setup modules
 download_and_run() {
-    sudo bash <(curl -fsSL "$BASE_URL/$1")
+    curl -fsSL "$BASE_URL/$1"
 }
 
 download_and_run "user-setup.sh"
