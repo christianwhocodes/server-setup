@@ -1,6 +1,5 @@
 #!/bin/bash
 set -e
-set -u
 
 BASE_URL="https://raw.githubusercontent.com/christianwhocodes/server-setup/main/scripts"
 
