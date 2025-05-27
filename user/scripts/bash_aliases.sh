@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-cat <<'EOF' > "/home/$USERNAME/.bash_aliases"
+cat <<'EOF' > "/home/$USER/.bash_aliases"
 # ======= OS Detection =======
 
 OS_TYPE="$(uname -s)"
@@ -135,7 +135,5 @@ function remove_recursively {
 }
 EOF
 
-chown "$USERNAME:$USERNAME" "/home/$USERNAME/.bash_aliases"
-chmod 644 "/home/$USERNAME/.bash_aliases"
-
-echo "✓ .bash_aliases created for $USERNAME"
+chown "$USER:$USER" "/home/$USER/.bash_aliases"
+chmod 644 "/home/$USER/.bash_aliases"
