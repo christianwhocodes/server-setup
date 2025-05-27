@@ -66,9 +66,12 @@ exec > >(tee -a "${LOG_FILE}") 2>&1
 # Set non-interactive mode for apt-get
 export DEBIAN_FRONTEND=noninteractive
 
+# Pass environment variables to scripts
+export USERNAME PASSWORD SUDO_PRIVILEGES CODE_SERVER_PORT
+
 # Run setup modules
 download_and_run() {
-    sudo USERNAME="$USERNAME" PASSWORD="$PASSWORD" SUDO_PRIVILEGES="$SUDO_PRIVILEGES" CODE_SERVER_PORT="$CODE_SERVER_PORT" bash <(curl -fsSL "$BASE_URL/$1")
+    sudo bash <(curl -fsSL "$BASE_URL/$1")
 }
 
 download_and_run "user-setup.sh"
