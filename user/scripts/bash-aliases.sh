@@ -11,11 +11,11 @@ OS_TYPE="$(uname -s)"
 case "$OS_TYPE" in
     Linux)
         PYTHON_CMD="python3"
-        REPOS="$HOME/repos"
+        GITHUB="$HOME/github"
         ;;
     MINGW*|CYGWIN*|MSYS*)
         PYTHON_CMD="python"
-        REPOS="/d/Repositories"
+        GITHUB="/g"
         ;;
     *)
         echo "Unsupported operating system: $OS_TYPE" >&2
@@ -25,8 +25,8 @@ esac
 
 # ======= Repositories =======
 
-function repos {
-    cd "$REPOS" || echo "Directory $REPOS does not exist"
+function github {
+    cd "$GITHUB" || echo "Directory $GITHUB does not exist"
 }
 
 # ======= Python & Virtualenv =======
