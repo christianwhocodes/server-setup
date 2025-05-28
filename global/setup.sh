@@ -5,7 +5,7 @@ set -e
 
 export DEBIAN_FRONTEND=noninteractive
 
-SETUP_TYPE="system"
+SETUP_TYPE="global"
 
 TMP_DIR="/tmp/server-setup/$SETUP_TYPE"
 mkdir -p "$TMP_DIR"
@@ -17,16 +17,13 @@ download_and_run() {
     local tmp_file="$TMP_DIR/$script"
     curl -fsSL "$BASE_URL/$script" -o "$tmp_file"
     chmod +x "$tmp_file"
-    bash "$tmp_file"
+    sudo bash "$tmp_file"
 }
 
 # ################# Start of the script #################
 
 echo "=== Start Setup ($SETUP_TYPE) Configuration ==="
 echo ""
-
-# Update and Upgrade the system
-apt update && apt upgrade -y
 
 # Allow SSH connections and enable UFW
 ufw allow OpenSSH
