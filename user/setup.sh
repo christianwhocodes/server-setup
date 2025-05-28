@@ -62,25 +62,5 @@ rm -rf "$TMP_DIR"
 
 # Final message
 echo "=== ✅ Finished Setup ($SETUP_TYPE) Configuration ==="
-echo ""
-echo ""
-echo "Restart shell by running 'source ~/.bashrc && exec $SHELL' or opening a new terminal."
-echo ""
-echo ""
-echo "############## Node Js Configuration ##############"
-echo "To install node and npm run 'nvm install node' or 'nvm install <version>'";
-echo "You may want to start by installing some global packages like 'npm install -g npm@latest serve pm2'";
-echo ""
-echo ""
-echo "############## Python Configuration ##############"
-echo "To install python run 'pyenv install <version>' or 'pyenv global <version>'";
-echo "You may want to start by installing some global packages like 'pip install --upgrade pip poetry jupyter'";
-echo ""
-echo ""
-echo "############## Code Server ##############"
-echo "Request system admin to enable the code-server service for you.";
-echo "The system admin can run the following command: 'sudo systemctl enable --now code-server@$USER'";
-echo "The system admin can then configure NGINX to reverse proxy to code-server under a domain e.g 'https://developer.example.com/$USER'";
-echo "You can then access code-server at that domain.";
 
 # ################# End of the script #################

@@ -45,9 +45,5 @@ rm -rf "$TMP_DIR"
 
 # Final message
 echo "=== ✅ Finished Setup ($SETUP_TYPE) Configuration ==="
-echo ""
-echo ""
-echo "It is recommended you reboot the system as some system updates may require rebooting the server to take effect.";
-echo "You can do this by running 'sudo reboot' or 'sudo shutdown -r now'."
 
 # ################# End of the script #################
