@@ -22,10 +22,17 @@ rsync --archive --chown=new_user:new_user ~/.ssh /home/new_user
 ```
 
 ### Quick Setup
-Run this single command on your fresh Ubuntu server to automatically configure everything:
+Login as the new user
+
+```bash
+ssh new_user@example.com
+```
+
+Copy and run the below code block on your fresh Ubuntu server to automatically configure everything:
 
 ```bash
 bash -c "$(curl -sSL https://raw.githubusercontent.com/christianwhocodes/server-setup/main/user/setup.sh)"
+source ~/.bashrc && exec /bin/bash
 ```
 
 ### Alternative (Safer) Method
@@ -41,6 +48,9 @@ cat setup.sh
 # Make it executable and run
 chmod +x setup.sh
 bash ./setup.sh
+
+# Restart shell
+source ~/.bashrc && exec /bin/bash
 ```
 
 ## What This Script Does
@@ -48,10 +58,47 @@ bash ./setup.sh
 - Creates a github folder in the `/home/[USER]` directory for keeping code repos.
 - Sets up Code Server for the user
 - Sets up bash aliases for the user
-- Installs and configures NVM, node and npm
-- Installs and configures Pyenv, python and pip
 - Cleans up temporary files
 
-## Requirements
-- Fresh Ubuntu server (tested on Ubuntu 20.04/22.04)
-- Internet connection
+## Node Js Configuration
+Install node and npm run
+```bash
+nvm install node
+
+# or specific version
+nvm install <version>
+```
+
+You may want to start by installing some global packages
+
+```bash
+npm install -g npm@latest serve pm2
+```
+
+## Python Configuration
+Install python and pip run
+```bash
+# Check for successful pyenv Installation:
+pyenv versions
+
+# List Python versions available in pyenv
+pyenv install -l
+
+# Install preferred Python version e.g. 3.13.3
+pyenv install 3.13.3
+
+# Set your version to be recognized globally within your user space
+pyenv global 3.13.3
+
+# Or set it locally per project
+pyenv local 3.13.3
+
+# Check either the system-wide, user-global or the local Python version is in use
+pyenv prefix
+```
+
+You may want to start by installing some global packages
+
+```bash
+pip install --upgrade pip poetry jupyter
+```
