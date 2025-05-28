@@ -3,10 +3,18 @@ Automated global setup script for a remote Linux (Ubuntu) server.
 ## Usage
 
 ### Prerequisites
-Ensure you have an updated system
+- Ensure you have an updated system
 
 ```bash
 sudo apt update && sudo apt upgrade -y
+```
+
+- Unless you have the need to, we highly recommend allowing OpenSSH in the FireWall list
+
+```bash
+sudo apt install ufw
+ufw allow OpenSSH
+ufw enable
 ```
 
 ### Quick Setup

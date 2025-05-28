@@ -25,10 +25,6 @@ download_and_run() {
 echo "=== Start Setup ($SETUP_TYPE) Configuration ==="
 echo ""
 
-# Allow SSH connections and enable UFW
-ufw allow OpenSSH
-ufw --force enable
-
 # Set up code-server
 curl -fsSL https://code-server.dev/install.sh | sh
 
