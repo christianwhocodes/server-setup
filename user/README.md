@@ -2,6 +2,25 @@
 Automated user setup script for a remote Linux (Ubuntu) server.
 ## Usage
 
+### Prerequisites
+The setup script should be run in a logged in terminal session
+
+To create a new user, login as root follow the steps below
+
+```bash
+ssh root@example.com
+```
+
+```bash
+adduser new_user
+
+# Give the user sudo privileges (Optional)
+usermod -aG sudo new_user
+
+# Allow the user to login via passwordless (ssh-key) ssh (Optional)
+rsync --archive --chown=new_user:new_user ~/.ssh /home/new_user
+```
+
 ### Quick Setup
 Run this single command on your fresh Ubuntu server to automatically configure everything:
 
