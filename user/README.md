@@ -3,7 +3,6 @@ Automated user setup script for a remote Linux (Ubuntu) server.
 ## Usage
 
 ### Prerequisites
-The setup script should be run in a logged in terminal session
 
 To create a new user, login as root follow the steps below
 
@@ -13,11 +12,17 @@ ssh root@example.com
 
 ```bash
 adduser new_user
+```
 
-# Give the user sudo privileges (Optional)
+_(Optional)_ Give the user sudo privileges:
+
+```bash
 usermod -aG sudo new_user
+```
 
-# Allow the user to login via passwordless (ssh-key) ssh (Optional)
+_(Optional)_ Allow the user to login via passwordless (ssh-key) ssh:
+
+```bash
 rsync --archive --chown=new_user:new_user ~/.ssh /home/new_user
 ```
 
@@ -28,35 +33,48 @@ Login as the new user
 ssh new_user@example.com
 ```
 
-Copy and run the below code block on your fresh Ubuntu server to automatically configure everything:
+Run the command on your new user fresh logged-in session:
 
 ```bash
 bash -c "$(curl -sSL https://raw.githubusercontent.com/christianwhocodes/server-setup/main/user/setup.sh)"
+```
+
+After which restart the session for changes to fully take effect:
+
+```bash
 source ~/.bashrc && exec /bin/bash
 ```
 
 ### Alternative (Safer) Method
-If you prefer to review the script before running it:
+If you prefer to review the script before running it, first download it:
 
 ```bash
-# Download the script
 curl -O https://raw.githubusercontent.com/christianwhocodes/server-setup/main/user/setup.sh
+```
 
-# Review the script
+Review the script:
+
+```bash
 cat setup.sh
+```
 
-# Make it executable and run
+Make it executable and run:
+
+```bash 
 chmod +x setup.sh
 bash ./setup.sh
+```
 
-# Restart shell
+After which restart the session for changes to fully take effect:
+
+```bash
 source ~/.bashrc && exec /bin/bash
 ```
 
 ## What This Script Does
 
 - Creates a github folder in the `/home/[USER]` directory for keeping code repos.
-- Sets up Code Server for the user
+- Creates Code Server config file for the user
 - Sets up bash aliases for the user
 - Cleans up temporary files
 
@@ -102,3 +120,13 @@ You may want to start by installing some global packages
 ```bash
 pip install --upgrade pip poetry jupyter
 ```
+
+## Code Server Configuration
+
+Request system admin to enable the code-server service for you. The system admin can run the following command:
+
+```bash
+sudo systemctl enable --now code-server@new_user
+```
+
+The system admin can then configure NGINX to reverse proxy to code-server under a domain e.g 'https://developer.example.com/$USER'. You can then access code-server at that domain.

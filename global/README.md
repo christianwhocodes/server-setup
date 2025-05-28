@@ -9,6 +9,15 @@ Automated global setup script for a remote Linux (Ubuntu) server.
 sudo apt update && sudo apt upgrade -y
 ```
 
+- It is recommended you reboot the system as some system updates may require rebooting the server to take effect.
+
+```bash
+sudo reboot
+
+# alternatively
+sudo shutdown -r now
+```
+
 - Unless you have the need to, we highly recommend allowing OpenSSH in the FireWall list
 
 ```bash
@@ -24,19 +33,36 @@ Run this single command on your fresh Ubuntu server to automatically configure e
 bash -c "$(curl -sSL https://raw.githubusercontent.com/christianwhocodes/server-setup/main/global/setup.sh)"
 ```
 
-### Alternative (Safer) Method
-If you prefer to review the script before running it:
+After which restart the session for changes to fully take effect:
 
 ```bash
-# Download the script
+source ~/.bashrc && exec /bin/bash
+```
+
+### Alternative (Safer) Method
+If you prefer to review the script before running it, first download it:
+
+```bash
 curl -O https://raw.githubusercontent.com/christianwhocodes/server-setup/main/global/setup.sh
+```
 
-# Review the script
+Review the script:
+
+```bash
 cat setup.sh
+```
 
-# Make it executable and run
+Make it executable and run:
+
+```bash 
 chmod +x setup.sh
 bash ./setup.sh
+```
+
+After which restart the session for changes to fully take effect:
+
+```bash
+source ~/.bashrc && exec /bin/bash
 ```
 
 ## What This Script Does
