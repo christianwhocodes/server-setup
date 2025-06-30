@@ -43,7 +43,7 @@ read -p "Proceed with setup? (y/N): " CONFIRM
 [[ "$CONFIRM" =~ ^[Yy]$ ]] || exit 0
 
 # Set up github folder
-download_and_run "github.sh"
+# download_and_run "github.sh"
 
 # Set up code-server
 download_and_run "code-server.sh"
