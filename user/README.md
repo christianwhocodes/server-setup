@@ -116,10 +116,14 @@ pyenv local 3.13.6
 pyenv prefix
 ```
 
-You may want to start by installing some global packages
+You may want to start by installing some global packages and perhaps configure some settings
 
 ```bash
 pip install --upgrade pip poetry jupyter
+```
+
+```bash
+poetry config virtualenvs.in-project true
 ```
 
 ## Code Server Configuration
