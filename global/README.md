@@ -22,8 +22,8 @@ sudo shutdown -r now
 
 ```bash
 sudo apt install ufw
-ufw allow OpenSSH
-ufw enable
+sudo ufw allow OpenSSH
+sudo ufw enable
 ```
 
 ### Quick Setup
