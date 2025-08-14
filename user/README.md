@@ -82,15 +82,16 @@ source ~/.bashrc && exec /bin/bash
 Install node and npm run
 ```bash
 nvm install node
+```
 
-# or specific version
+```
 nvm install <version>
 ```
 
 You may want to start by installing some global packages
 
 ```bash
-npm install -g npm@latest serve pm2
+npm install -g npm@latest pm2
 ```
 
 ## Python Configuration
@@ -102,14 +103,14 @@ pyenv versions
 # List Python versions available in pyenv
 pyenv install -l
 
-# Install preferred Python version e.g. 3.13.3
-pyenv install 3.13.3
+# Install preferred Python version e.g. 3.13.6
+pyenv install 3.13.6
 
 # Set your version to be recognized globally within your user space
-pyenv global 3.13.3
+pyenv global 3.13.6
 
 # Or set it locally per project
-pyenv local 3.13.3
+pyenv local 3.13.6
 
 # Check either the system-wide, user-global or the local Python version is in use
 pyenv prefix
