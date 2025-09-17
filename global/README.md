@@ -30,7 +30,7 @@ sudo ufw enable
 Run this single command on your fresh Ubuntu server to automatically configure everything:
 
 ```bash
-bash -c "$(curl -sSL https://raw.githubusercontent.com/christianwhocodes/server-setup/main/global/setup.sh)"
+bash -c "$(curl -sSL https://raw.githubusercontent.com/christianwhocodes/foundry/main/global/setup.sh)"
 ```
 
 After which restart the session for changes to fully take effect:
@@ -43,7 +43,7 @@ source ~/.bashrc && exec /bin/bash
 If you prefer to review the script before running it, first download it:
 
 ```bash
-curl -O https://raw.githubusercontent.com/christianwhocodes/server-setup/main/global/setup.sh
+curl -O https://raw.githubusercontent.com/christianwhocodes/foundry/main/global/setup.sh
 ```
 
 Review the script:

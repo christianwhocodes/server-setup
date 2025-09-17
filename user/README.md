@@ -36,7 +36,7 @@ ssh new_user@example.com
 Run the command on your new user fresh logged-in session:
 
 ```bash
-bash -c "$(curl -sSL https://raw.githubusercontent.com/christianwhocodes/server-setup/main/user/setup.sh)"
+bash -c "$(curl -sSL https://raw.githubusercontent.com/christianwhocodes/foundry/main/user/setup.sh)"
 ```
 
 After which restart the session for changes to fully take effect:
@@ -49,7 +49,7 @@ source ~/.bashrc && exec /bin/bash
 If you prefer to review the script before running it, first download it:
 
 ```bash
-curl -O https://raw.githubusercontent.com/christianwhocodes/server-setup/main/user/setup.sh
+curl -O https://raw.githubusercontent.com/christianwhocodes/foundry/main/user/setup.sh
 ```
 
 Review the script:
