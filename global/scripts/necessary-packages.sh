@@ -1,3 +1,6 @@
+#!/bin/bash
+set -e
+
 apt install -y \
   git curl wget \
   build-essential software-properties-common \
