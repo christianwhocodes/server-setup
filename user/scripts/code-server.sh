@@ -45,8 +45,16 @@ echo -e "${GREEN}✅ Found available port: $PORT${NC}"
 RANDOM_PASS=$(openssl rand -base64 12)
 
 # Write config values to temp files for parent script
-echo "$PORT" > "$TMP_DIR/code-server-port.tmp"
 echo "$RANDOM_PASS" > "$TMP_DIR/code-server-pass.tmp"
+
+# This is for internal 'user' setup use only,
+echo "$PORT" > "$TMP_DIR/code-server-port.tmp"
+
+# While this is for 'post-user' code-server.sh to read
+if ! echo "$PORT" > "/tmp/code-server-port.tmp"; then
+    echo -e "${RED}❌ Failed to write port number to temporary file${NC}"
+    exit 1
+fi
 
 # Configure code-server
 mkdir -p "/home/$USER/.config/code-server"
