@@ -3,12 +3,12 @@ set -e
 
 rm -f "/home/$USER/.bash_aliases"
 touch "/home/$USER/.bash_aliases"
-cat <<'EOF' > "/home/$USER/.bash_aliases"
 
+cat << EOF > "/home/$USER/.bash_aliases"
 # ======= Misc =======
 alias update="sudo apt update && sudo apt -y upgrade && sudo apt autoclean && sudo apt autoremove"
 alias editaliases="nano ~/.bash_aliases"
-alias refresh="source ~/.bashrc && exec \"$SHELL\""
+alias refresh='source ~/.bashrc && exec "$SHELL"'
 alias showaliases="cat ~/.bash_aliases"
 alias la="ls -a"
 function repos { cd "$HOME/repos" || echo "Directory $HOME/repos does not exist" }
@@ -58,64 +58,6 @@ alias php="sudo service php8.2-fpm"
 
 # ======= Code Server =======
 alias code_server_update="curl -fsSL https://code-server.dev/install.sh | sh"
-
-# ======= File Management =======
-# Remove files/folders recursively with confirmation
-# Usage examples:
-#   remove_recursively ./src .pyc       # Remove all .pyc files in src directory
-#   remove_recursively . node_modules -d # Remove all node_modules directories
-#   remove_recursively . .git -d -f     # Force remove all .git directories
-#   remove_recursively . .env           # Remove all files named .env
-#   remove_recursively . .cache -d      # Remove all .cache directories
-function remove_recursively {
-    local folderPath=$1
-    local pattern=$2
-    local targetType=$3
-    local force=$4
-
-    if [ -z "$folderPath" ] || [ -z "$pattern" ]; then
-        echo "Usage: remove_recursively <folderPath> <fileName|extension> [-f] [-d]"
-        echo "       -d : Remove directories instead of files"
-        echo "       -f : Force deletion (no confirmation)"
-        return 1
-    fi
-
-    folderPath=$(realpath "$folderPath")
-
-    if [ "$folderPath" = "/" ] || [ "$folderPath" = "$HOME" ]; then
-        echo "⚠️  Error: Refusing to delete files in '$folderPath' (to prevent system damage)."
-        return 1
-    fi
-
-    if [[ "$pattern" == .* ]]; then
-        pattern="*$pattern"
-    fi
-
-    echo "🛑 You are about to delete items in: $folderPath"
-    if [ "$targetType" = "-d" ]; then
-        echo "📁 Target: All directories named '$pattern'"
-    elif [[ "$pattern" == *.* ]]; then
-        echo "📄 Target: All files with extension '$pattern'"
-    else
-        echo "📄 Target: All files named '$pattern'"
-    fi
-
-    if [ "$force" != "-f" ]; then
-        read -p "❓ Are you sure? (y/N): " confirm
-        if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
-            echo "❌ Deletion cancelled."
-            return 1
-        fi
-    fi
-
-    if [ "$targetType" = "-d" ]; then
-        find "$folderPath" -type d -name "$pattern" -exec rm -r {} +
-    else
-        find "$folderPath" -type f -name "$pattern" -exec rm {} +
-    fi
-
-    echo "✅ Deletion complete."
-}
 EOF
 
 chown "$USER:$USER" "/home/$USER/.bash_aliases"
