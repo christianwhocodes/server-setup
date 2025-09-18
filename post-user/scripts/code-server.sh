@@ -3,13 +3,11 @@ set -e
 
 # Color variables
 BLUE='\033[0;34m'
-YELLOW='\033[1;33m'  # <-- This is the new one I added
+YELLOW='\033[1;33m'
 NC='\033[0m'
 
-DOMAIN_NAME=$1
-
 if [ -z "$DOMAIN_NAME" ]; then
-    echo "Error: Domain name is required"
+    echo "Error: DOMAIN_NAME environment variable is required"
     exit 1
 fi
 
