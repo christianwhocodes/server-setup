@@ -132,7 +132,7 @@ source ~/.bashrc && exec /bin/bash
 
 ```bash
 nvm install node
-npm install -g npm@latest pm2 eslint
+npm install -g npm@latest vsce pm2 eslint
 uv python install
 ```
 
