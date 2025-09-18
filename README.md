@@ -118,10 +118,12 @@ bash -c "$(curl -sSL https://raw.githubusercontent.com/christianwhocodes/foundry
 source ~/.bashrc && exec /bin/bash
 ```
 
-**Step 3 (Optional):** Run the post-user setup script where node and python are installed together with global packages:
+**Step 3 (Optional):** Install Node.js, Python, and global packages:
 
 ```bash
-bash -c "$(curl -sSL https://raw.githubusercontent.com/christianwhocodes/foundry/main/user/post-setup.sh)"
+nvm install node
+npm install -g npm@latest pm2 eslint
+uv python install
 ```
 
 ---
