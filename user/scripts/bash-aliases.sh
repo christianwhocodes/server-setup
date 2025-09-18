@@ -4,45 +4,27 @@ set -e
 rm -f "/home/$USER/.bash_aliases"
 touch "/home/$USER/.bash_aliases"
 cat <<'EOF' > "/home/$USER/.bash_aliases"
-# ======= OS Detection =======
 
-OS_TYPE="$(uname -s)"
-
-case "$OS_TYPE" in
-    Linux)
-        PYTHON_CMD="python3"
-        REPOS="$HOME/repos"
-        ;;
-    MINGW*|CYGWIN*|MSYS*)
-        PYTHON_CMD="python"
-        REPOS="/g"
-        ;;
-    *)
-        echo "Unsupported operating system: $OS_TYPE" >&2
-        return 1
-        ;;
-esac
-
-# ======= Repositories =======
-
-function repos {
-    cd "$REPOS" || echo "Directory $REPOS does not exist"
-}
+# ======= Misc =======
+alias update="sudo apt update && sudo apt -y upgrade && sudo apt autoclean && sudo apt autoremove"
+alias editaliases="nano ~/.bash_aliases"
+alias refresh="source ~/.bashrc && exec \"$SHELL\""
+alias showaliases="cat ~/.bash_aliases"
+alias la="ls -a"
+function repos { cd "$HOME/repos" || echo "Directory $HOME/repos does not exist" }
 
 # ======= Python & Virtualenv =======
-
-alias createvenv="$PYTHON_CMD -m venv ./.venv"
+alias createvenv="python3 -m venv ./.venv"
 alias activatevenv="source .venv/bin/activate"
-alias installreq="$PYTHON_CMD -m pip install --upgrade pip && pip install -r requirements.txt"
-# ======= Django =======
 
+# ======= Django =======
 function d {
     if [ -f "poetry.lock" ]; then
-        poetry run $PYTHON_CMD manage.py "$@"
+        poetry run python3 manage.py "$@"
     elif [ -f "Pipfile" ]; then
-        pipenv run $PYTHON_CMD manage.py "$@"
+        pipenv run python3 manage.py "$@"
     else
-        $PYTHON_CMD manage.py "$@"
+        python3 manage.py "$@"
     fi
 }
 
@@ -59,11 +41,9 @@ function drun0() {
 }
 
 # ======= PostgreSQL =======
-
 alias postgres="sudo service postgresql"
 
 # ======= Nginx =======
-
 alias nginxerrorlog="sudo nano /var/log/nginx/error.log"
 alias sitesavailable="cd /etc/nginx/sites-available/"
 alias sitesenabled="cd /etc/nginx/sites-enabled/"
@@ -74,18 +54,19 @@ function nginxlink { sudo ln -s /etc/nginx/sites-available/$1 /etc/nginx/sites-e
 function nginxunlink { sudo unlink /etc/nginx/sites-enabled/$1; }
 
 # ======= PHP =======
-
 alias php="sudo service php8.2-fpm"
 
-# ======= Misc =======
-
-alias update="sudo apt update && sudo apt -y upgrade && sudo apt autoclean && sudo apt autoremove"
-alias editaliases="nano ~/.bash_aliases"
-alias refresh="source ~/.bashrc && exec \"$SHELL\""
-alias showaliases="cat ~/.bash_aliases"
-alias la="ls -a"
+# ======= Code Server =======
 alias code_server_update="curl -fsSL https://code-server.dev/install.sh | sh"
 
+# ======= File Management =======
+# Remove files/folders recursively with confirmation
+# Usage examples:
+#   remove_recursively ./src .pyc       # Remove all .pyc files in src directory
+#   remove_recursively . node_modules -d # Remove all node_modules directories
+#   remove_recursively . .git -d -f     # Force remove all .git directories
+#   remove_recursively . .env           # Remove all files named .env
+#   remove_recursively . .cache -d      # Remove all .cache directories
 function remove_recursively {
     local folderPath=$1
     local pattern=$2

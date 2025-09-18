@@ -1,16 +1,16 @@
 #!/bin/bash
 set -e
 
-# ################# Variables and Functions ################# 
+# ***************** Variables and Functions ***************** 
 
 export DEBIAN_FRONTEND=noninteractive
 
 SETUP_TYPE="global"
 
-TMP_DIR="/tmp/server-setup/$SETUP_TYPE"
+TMP_DIR="/tmp/foundry/$SETUP_TYPE"
 mkdir -p "$TMP_DIR"
 
-BASE_URL="https://raw.githubusercontent.com/christianwhocodes/server-setup/main/$SETUP_TYPE/scripts"
+BASE_URL="https://raw.githubusercontent.com/christianwhocodes/foundry/main/$SETUP_TYPE/scripts"
 
 download_and_run() {
     local script="$1"
@@ -20,13 +20,13 @@ download_and_run() {
     sudo bash "$tmp_file"
 }
 
-# ################# Start of the script #################
+# ***************** Start of the script *****************
 
 echo "=== Start Setup ($SETUP_TYPE) Configuration ==="
 echo ""
 
 # Set up code-server
-curl -fsSL https://code-server.dev/install.sh | sh
+download_and_run "code-server.sh"
 
 # Set up nginx
 download_and_run "nginx.sh"
@@ -46,4 +46,4 @@ rm -rf "$TMP_DIR"
 # Final message
 echo "=== ✅ Finished Setup ($SETUP_TYPE) Configuration ==="
 
-# ################# End of the script #################
+# ***************** End of the script *****************
