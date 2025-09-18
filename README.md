@@ -133,5 +133,5 @@ uv python install
 Request system admin to enable the code-server service for you. The system admin can run the following command:
 
 ```bash
-sudo systemctl enable --now code-server@new_user
+sudo systemctl enable --now code-server@developer
 ```
