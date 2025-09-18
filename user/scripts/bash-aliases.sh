@@ -1,6 +1,11 @@
 #!/bin/bash
 set -e
 
+# Color variables
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+NC='\033[0m'
+
 # Backup existing .bash_aliases if it exists
 if [ -f "/home/$USER/.bash_aliases" ]; then
     cp "/home/$USER/.bash_aliases" "/home/$USER/.bash_aliases.backup.$(date +%Y%m%d_%H%M%S)"
@@ -161,12 +166,9 @@ EOF
 chown "$USER:$USER" "/home/$USER/.bash_aliases"
 chmod 644 "/home/$USER/.bash_aliases"
 
-echo "✅ .bash_aliases file has been recreated successfully!"
-echo "Run 'source ~/.bashrc' or start a new shell session to load the aliases."
-
 # Verify the file syntax
 if bash -n "/home/$USER/.bash_aliases" 2>/dev/null; then
-    echo "✅ Syntax check passed!"
+    echo -e "${GREEN}✅ Syntax check passed!${NC}"
 else
-    echo "❌ Syntax check failed. Please review the file."
+    echo -e "${RED}❌ Syntax check failed. Please review the file.${NC}"
 fi

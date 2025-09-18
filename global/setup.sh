@@ -1,15 +1,16 @@
 #!/bin/bash
 set -e
 
-# ***************** Variables and Functions ***************** 
+# Color variables
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+NC='\033[0m'
 
-export DEBIAN_FRONTEND=noninteractive
-
+# ***************** Other Variables and Functions *****************
 SETUP_TYPE="global"
-
+export DEBIAN_FRONTEND=noninteractive
 TMP_DIR="/tmp/foundry/$SETUP_TYPE"
 mkdir -p "$TMP_DIR"
-
 BASE_URL="https://raw.githubusercontent.com/christianwhocodes/foundry/main/$SETUP_TYPE/scripts"
 
 download_and_run() {
@@ -21,29 +22,18 @@ download_and_run() {
 }
 
 # ***************** Start of the script *****************
-
-echo "=== Start Setup ($SETUP_TYPE) Configuration ==="
+echo -e "${BLUE}=== Start Setup ($SETUP_TYPE) Configuration ===${NC}"
 echo ""
 
-# Set up code-server
 download_and_run "code-server.sh"
-
-# Set up nginx
 download_and_run "nginx.sh"
-
-# Set up certbot for SSL certificates
 download_and_run "certbot.sh"
-
-# Set up PostgreSQL
 download_and_run "postgres.sh"
-
-# Set up Necessary packages
 download_and_run "necessary-packages.sh"
 
 # Cleanup
 rm -rf "$TMP_DIR"
 
 # Final message
-echo "=== ✅ Finished Setup ($SETUP_TYPE) Configuration ==="
-
+echo -e "${GREEN}=== ✅ Finished Setup ($SETUP_TYPE) Configuration ===${NC}"
 # ***************** End of the script *****************
