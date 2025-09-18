@@ -4,10 +4,11 @@ set -e
 # Color variables
 BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
+RED='\033[0;31m'
 NC='\033[0m'
 
 if [ -z "$DOMAIN_NAME" ]; then
-    echo "Error: DOMAIN_NAME environment variable is required"
+    echo -e "${RED}❌ DOMAIN_NAME environment variable is required${NC}"
     exit 1
 fi
 
@@ -46,14 +47,23 @@ systemctl reload nginx
 
 echo "Creating new nginx configuration..."
 
-# Create nginx config
+# Read the port number from temporary file
+CODE_SERVER_PORT=$(cat /tmp/code-server-port.tmp)
+
+# Validate that we got a port number
+if [ -z "$CODE_SERVER_PORT" ]; then
+    echo -e "${RED}❌ Failed to read port number from temporary file${NC}"
+    exit 1
+fi
+
+# Use the port in nginx configuration
 cat > /etc/nginx/sites-available/$DOMAIN_NAME << EOF
 server {
     listen 80;
     listen [::]:80;
     server_name $DOMAIN_NAME;
 
-    set \$code_server_port 8080;
+    set \$code_server_port $CODE_SERVER_PORT;
     include snippets/code-server-proxy.conf;
 }
 EOF
