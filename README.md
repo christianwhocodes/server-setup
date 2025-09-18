@@ -8,10 +8,6 @@ Automated setup scripts for a remote Linux (Ubuntu) server.
 - Root or sudo access (for global setup)
 - Internet connection
 
-## ⚠️ Security Note
-
-The global setup script requires a root/sudo permission to install packages and configure global services. Always review scripts before running them with sudo privileges.
-
 ---
 
 ## 🌍 Global Setup
@@ -25,6 +21,12 @@ Automated global setup script for a remote Linux (Ubuntu) server.
 - 🔒 Installs and configures Certbot
 - 🐘 Installs PostgreSQL
 - 🛠️ Installs essential development packages
+
+### ⚠️ Security Note
+
+The global setup requires:
+
+- Root/sudo privileges for installing packages
 
 ### 📚 Prerequisites
 
@@ -86,13 +88,13 @@ Create the user:
 sudo adduser developer
 ```
 
-*(Optional)* Give the user sudo privileges:
+_(Optional)_ Give the user sudo privileges:
 
 ```bash
 sudo usermod -aG sudo developer
 ```
 
-*(Optional)* Allow the user to login via passwordless (ssh-key) ssh:
+_(Optional)_ Allow the user to login via passwordless (ssh-key) ssh:
 
 ```bash
 sudo rsync --archive --chown=developer:developer ~/.ssh /home/developer
@@ -128,10 +130,35 @@ uv python install
 
 ---
 
-### 💻 Code Server Configuration
+## 👤 Post User Setup
 
-Request system admin to enable the code-server service for you. The system admin can run the following command:
+Automated post-user setup script for configuring Code Server with Nginx and SSL.
+
+### ✨ What Post User Setup Does
+
+- 🔄 Enables Code Server systemd service
+- 🌐 Configures Nginx reverse proxy
+- 🔒 Sets up SSL certificate with Certbot
+- 🔗 Links Code Server to your domain
+
+### ⚠️ Security Note
+
+The post-user setup requires:
+
+- A registered domain name pointing to your server
+- Port 80 and 443 open in your firewall
+- Root/sudo privileges for Nginx and SSL configuration
+
+### 📚 Prerequisites
+
+Before running the post-user setup, point your domain to your server's IP address.
+
+### 🚀 Quick Setup
+
+Run this command to start the post-user configuration:
 
 ```bash
-sudo systemctl enable --now code-server@developer
+bash -c "$(curl -sSL https://raw.githubusercontent.com/christianwhocodes/foundry/main/post-user/setup.sh)"
 ```
+
+After setup, access Code Server at: `https://your-domain.com`
