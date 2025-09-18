@@ -14,9 +14,9 @@ mkdir -p "$TMP_DIR"
 BASE_URL="https://raw.githubusercontent.com/christianwhocodes/foundry/main/$SETUP_TYPE/scripts"
 
 # Add domain input
-echo -e "\n${BLUE}Domain Configuration${NC}"
-read -p "$(echo -e ${GREEN}Enter your domain name \(e.g., code.example.com\): ${NC})" DOMAIN_NAME
-echo -e "${GREEN}Using domain: ${BLUE}$DOMAIN_NAME${NC}\n"
+echo -e "\n${BLUE}=== Domain Configuration ===${NC}"
+read -p "$(echo -e ${BLUE}Enter your domain name \(e.g., code.example.com\): ${NC})" DOMAIN_NAME
+echo -e "${GREEN}➜ Using domain: ${BLUE}$DOMAIN_NAME${NC}\n"
 export DOMAIN_NAME
 
 download_and_run() {
@@ -28,7 +28,7 @@ download_and_run() {
 }
 
 # ***************** Start of the script *****************
-echo -e "${BLUE}=== Start Setup ($SETUP_TYPE) Configuration ===${NC}"
+echo -e "${BLUE}=== Starting Setup ($SETUP_TYPE) Configuration ===${NC}"
 echo ""
 
 download_and_run "code-server.sh"
@@ -37,5 +37,8 @@ download_and_run "code-server.sh"
 rm -rf "$TMP_DIR"
 
 # Final message
-# Appropriate message after setting up code server with nginx and certbot
+echo -e "\n${GREEN}=== Setup Successfully Completed! ===${NC}"
+echo -e "${BLUE}➜ Code Server has been configured with SSL at:${NC}"
+echo -e "${GREEN}  https://$DOMAIN_NAME${NC}"
+echo -e "\n${BLUE}You can now access your Code Server securely through your browser.${NC}"
 # ***************** End of the script *****************
