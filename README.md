@@ -116,6 +116,12 @@ Login as the new user:
 bash -c "$(curl -sSL https://raw.githubusercontent.com/christianwhocodes/foundry/main/user/setup.sh)"
 ```
 
+> ⚠️ Important: The script will output:
+> - Your Code Server password and port number for server access
+> - Your SSH public key which needs to be added to your Git hosting service (GitHub, GitLab, etc.)
+> 
+> Save both of these for future use.
+
 **Step 2:** Restart the session for changes to fully take effect:
 
 ```bash
