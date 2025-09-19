@@ -10,23 +10,17 @@ Automated setup scripts for a remote Linux (Ubuntu) server.
 
 ---
 
-## 🌍 Global Setup
+## 🌍 Global Setup _(sudo required)_
 
 Automated global setup script for a remote Linux (Ubuntu) server.
 
 ### ✨ What Global Setup Does
 
-- 💻 Installs Code Server
 - 🌐 Installs and configures Nginx
 - 🔒 Installs and configures Certbot
+- 💻 Installs Code Server
 - 🐘 Installs PostgreSQL
 - 🛠️ Installs essential development packages
-
-### ⚠️ Security Note
-
-The global setup requires:
-
-- Root/sudo privileges for installing packages
 
 ### 📚 Prerequisites
 
@@ -38,9 +32,9 @@ sudo apt update && sudo apt upgrade -y
 
 It is recommended you reboot the system as some system updates may require rebooting the server to take effect:
 
-| Method 1      | Method 2               |
-| ------------- | ---------------------- |
-| `sudo reboot` | `sudo shutdown -r now` |
+```bash
+sudo reboot
+```
 
 Unless you have the need to, we highly recommend allowing OpenSSH in the FireWall list:
 
@@ -66,7 +60,7 @@ source ~/.bashrc && exec /bin/bash
 
 ---
 
-## 👤 User Setup
+## 👤 User Setup _(non-sudo)_
 
 Automated user setup script for a remote Linux (Ubuntu) server.
 
@@ -132,30 +126,26 @@ source ~/.bashrc && exec /bin/bash
 
 ```bash
 nvm install node
-npm install -g npm@latest vsce pm2 eslint
+npm install -g npm@latest pm2 eslint
 uv python install
 ```
 
 ---
 
-## 👤 Post User Setup
+## 👤 Post User Setup _(sudo required)_
 
 Automated post-user setup script for configuring Code Server with Nginx and SSL.
 
 ### ✨ What Post User Setup Does
 
-- 🔄 Enables Code Server systemd service
-- 🌐 Configures Nginx reverse proxy
-- 🔒 Sets up SSL certificate with Certbot
-- 🔗 Links Code Server to your domain
+- 🌐 Configures Code Server Nginx reverse proxy, linking it with a custom domain with Certbot SSL certificate
 
 ### ⚠️ Security Note
 
-The post-user setup requires:
+Besides sudo permissions, the post-user setup requires:
 
 - A registered domain name pointing to your server
 - Port 80 and 443 open in your firewall
-- Root/sudo privileges for Nginx and SSL configuration
 
 ### 📚 Prerequisites
 
