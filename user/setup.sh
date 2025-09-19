@@ -40,6 +40,7 @@ download_and_run() {
 echo -e "${BLUE}=== Setup ($SETUP_TYPE) Configuration ===${NC}"
 echo ""
 
+# * Order of execution matters! *
 download_and_run "code-server.sh"
 CODE_SERVER_PORT=$(cat "$TMP_DIR/code-server-port.tmp")
 CODE_SERVER_PASS=$(cat "$TMP_DIR/code-server-pass.tmp")

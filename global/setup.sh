@@ -30,9 +30,10 @@ download_and_run() {
 echo -e "${BLUE}=== Start Setup ($SETUP_TYPE) Configuration ===${NC}"
 echo ""
 
-download_and_run "code-server.sh"
+# * Order of execution matters! * 
 download_and_run "nginx.sh"
 download_and_run "certbot.sh"
+download_and_run "code-server.sh"
 download_and_run "postgres.sh"
 download_and_run "necessary-packages.sh"
 
