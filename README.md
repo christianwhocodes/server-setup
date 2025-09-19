@@ -4,7 +4,7 @@ Automated setup scripts for a remote Linux (Ubuntu) server.
 
 ## 📋 Requirements
 
-- Fresh Ubuntu server (tested on Ubuntu 20.04/22.04)
+- Fresh Ubuntu server (tested on Ubuntu 24.04)
 - Root or sudo access (for global setup)
 - Internet connection
 
