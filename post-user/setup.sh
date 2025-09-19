@@ -36,6 +36,7 @@ download_and_run() {
 echo -e "${BLUE}=== Starting Setup ($SETUP_TYPE) Configuration ===${NC}"
 echo ""
 
+# * Order of execution matters! *
 download_and_run "code-server.sh"
 
 # Cleanup
