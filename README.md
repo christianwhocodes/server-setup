@@ -144,7 +144,12 @@ Automated post-user setup script for configuring Code Server with Nginx and SSL.
 
 Besides sudo permissions, the post-user setup requires:
 
-- A registered domain name pointing to your server
+- A registered domain name pointing to your server's ip. Test it out below:
+
+```bash
+nslookup yourdomain.com
+```
+
 - Port 80 and 443 open in your firewall
 
 ### 📚 Prerequisites
