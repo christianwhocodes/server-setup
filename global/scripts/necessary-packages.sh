@@ -7,4 +7,5 @@ apt install -y \
   libssl-dev zlib1g-dev libbz2-dev libreadline-dev \
   libncursesw5-dev xz-utils tk-dev libxmlsec1-dev \
   libffi-dev liblzma-dev pandoc texlive-xetex \
-  libsqlite3-dev sqlite3
+  libsqlite3-dev sqlite3 \
+  xsel
