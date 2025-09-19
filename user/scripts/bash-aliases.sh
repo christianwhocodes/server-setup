@@ -20,6 +20,7 @@ alias editaliases="nano ~/.bash_aliases"
 alias refresh='source ~/.bashrc && exec "$SHELL"'
 alias showaliases="cat ~/.bash_aliases"
 alias la="ls -a"
+alias serve="npx serve --no-clipboard"
 function repos { cd "$HOME/repos" || echo "Directory $HOME/repos does not exist"; }
 
 # ======= Python & Virtualenv =======
