@@ -48,7 +48,7 @@ systemctl reload nginx
 echo "Creating new nginx configuration..."
 
 # Read the port number from temporary file
-CODE_SERVER_PORT=$(cat /tmp/code-server-port.tmp)
+CODE_SERVER_PORT=$(cat /tmp/code-server-port/$USER.tmp)
 
 # Validate that we got a port number
 if [ -z "$CODE_SERVER_PORT" ]; then
