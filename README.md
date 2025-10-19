@@ -1,6 +1,6 @@
 # 🏗️ Foundry
 
-Automated setup scripts for a remote Linux (Ubuntu) server.
+Automated setup bash scripts for a remote Linux (Ubuntu) server.
 
 ## 📋 Requirements
 
@@ -12,7 +12,7 @@ Automated setup scripts for a remote Linux (Ubuntu) server.
 
 ## 🌍 Global Setup _(sudo required)_
 
-Automated system setup script for a remote Linux (Ubuntu) server.
+Automated system setup bash script for a remote Linux (Ubuntu) server.
 
 ### ✨ What Global Setup Does
 
@@ -62,7 +62,7 @@ source ~/.bashrc && exec /bin/bash
 
 ## 👤 User Setup _(non-sudo)_
 
-Automated user setup script for a remote Linux (Ubuntu) server.
+Automated user setup bash script for a remote Linux (Ubuntu) server.
 
 ### ✨ What User Setup Does
 
@@ -135,7 +135,7 @@ uv python install
 
 ## 👤 Post User Setup _(sudo required)_
 
-Automated post-user setup script for configuring Code Server with Nginx and SSL.
+Automated post-user setup bash script for configuring Code Server with Nginx and SSL.
 
 ### ✨ What Post User Setup Does
 
