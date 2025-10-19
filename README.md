@@ -135,34 +135,68 @@ uv python install
 
 ## 👤 Post User Setup _(sudo required)_
 
-Automated post-user setup bash script for configuring Code Server with Nginx and SSL.
+After completing the user setup, a sudo user or administrator must enable and start the code-server service for the new user.
 
-### ✨ What Post User Setup Does
+### 🔐 Enable Code Server Service
 
-- 🌐 Configures Code Server Nginx reverse proxy, linking it with a custom domain with Certbot SSL certificate
-
-### ⚠️ Security Note
-
-Besides sudo permissions, the post-user setup requires:
-
-- A registered domain name pointing to your server's ip. Test it out below:
+Login as root or a user with sudo privileges, then run:
 
 ```bash
-nslookup yourdomain.com
+sudo systemctl enable --now code-server@developer
 ```
 
-- Port 80 and 443 open in your firewall
+Replace `developer` with the actual username you created.
 
-### 📚 Prerequisites
+### ✅ Verify Service Status
 
-Before running the post-user setup, point your domain to your server's IP address.
-
-### 🚀 Quick Setup
-
-Run this command to start the post-user configuration:
+Check if the service is running properly:
 
 ```bash
-bash -c "$(curl -sSL https://raw.githubusercontent.com/christianwhocodes/foundry/main/post-user/setup.sh)"
+sudo systemctl status code-server@developer
 ```
 
-After setup, access Code Server at: `https://your-domain.com`
+You should see the service as `active (running)`.
+
+### 🌐 Access Code Server
+
+Once the service is running, you can access Code Server at:
+
+```
+http://your-server-ip:8080
+```
+
+Use the password and port number provided during the user setup to login.
+
+### 🔐 SSH Port Forwarding _(Recommended for Remote Access)_
+
+For secure access from your local computer, use SSH port forwarding instead of exposing Code Server directly:
+
+**With SSH Key:**
+
+```bash
+ssh -L 8080:localhost:8080 -i /path/to/key developer@your-server-ip
+```
+
+**Without SSH Key (password authentication):**
+
+```bash
+ssh -L 8080:localhost:8080 developer@your-server-ip
+```
+
+Then access Code Server locally at:
+
+```
+http://localhost:8080
+```
+
+This keeps your Code Server secure by not exposing it to the public internet.
+
+---
+
+## 📝 License
+
+MIT
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
