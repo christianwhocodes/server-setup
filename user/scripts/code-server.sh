@@ -46,15 +46,12 @@ RANDOM_PASS=$(openssl rand -base64 12)
 
 # Write config values to temp files for parent script
 echo "$RANDOM_PASS" > "$TMP_DIR/code-server-pass.tmp"
+echo "$PORT" > "$TMP_DIR/code-server-port.tmp" # This is for internal 'user' setup use only,
 
-# This is for internal 'user' setup use only,
-echo "$PORT" > "$TMP_DIR/code-server-port.tmp"
-
-# While this is for 'post-user' code-server.sh to read
-if ! echo "$PORT" > "/tmp/code-server-port.tmp"; then
+if ! echo "$PORT" > "/tmp/code-server-port/$USER.tmp"; then
     echo -e "${RED}❌ Failed to write port number to temporary file${NC}"
     exit 1
-fi
+fi # While this is for 'post-user' code-server.sh to read
 
 # Configure code-server
 mkdir -p "/home/$USER/.config/code-server"
