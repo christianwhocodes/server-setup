@@ -5,14 +5,14 @@ Automated setup scripts for a remote Linux (Ubuntu) server.
 ## 📋 Requirements
 
 - Fresh Ubuntu server (tested on Ubuntu 24.04)
-- Root or sudo access (for global setup)
+- Root or sudo access (for system setup)
 - Internet connection
 
 ---
 
 ## 🌍 Global Setup _(sudo required)_
 
-Automated global setup script for a remote Linux (Ubuntu) server.
+Automated system setup script for a remote Linux (Ubuntu) server.
 
 ### ✨ What Global Setup Does
 
@@ -49,7 +49,7 @@ sudo ufw enable
 **Step 1:** Run this single command on your fresh Ubuntu server to automatically configure everything:
 
 ```bash
-bash -c "$(curl -sSL https://raw.githubusercontent.com/christianwhocodes/foundry/main/global/setup.sh)"
+bash -c "$(curl -sSL https://raw.githubusercontent.com/christianwhocodes/foundry/main/system/setup.sh)"
 ```
 
 **Step 2:** Restart the session for changes to fully take effect:
@@ -111,9 +111,10 @@ bash -c "$(curl -sSL https://raw.githubusercontent.com/christianwhocodes/foundry
 ```
 
 > ⚠️ Important: The script will output:
+>
 > - Your Code Server password and port number for server access
 > - Your SSH public key which needs to be added to your Git hosting service (GitHub, GitLab, etc.)
-> 
+>
 > Save both of these for future use.
 
 **Step 2:** Restart the session for changes to fully take effect:
