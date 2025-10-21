@@ -1,18 +1,19 @@
 # 🏗️ Foundry
 
-Automated setup bash scripts for a remote Linux (Ubuntu) server.
+Automated setup PowerShell scripts for Windows systems.
 
 ## 📋 Requirements
 
-- Fresh Ubuntu server (tested on Ubuntu 24.04)
-- Root or sudo access (for system setup)
+- Windows 10/11 or Windows Server
+- Administrator access (for system setup)
 - Internet connection
+- PowerShell 5.1 or later
 
 ---
 
-## 🌍 Global Setup _(sudo required)_
+## 🌍 Global Setup _(Administrator required)_
 
-Automated system setup bash script for a remote Linux (Ubuntu) server.
+Automated system setup PowerShell script for Windows.
 
 ### ✨ What Global Setup Does
 
@@ -20,94 +21,72 @@ Automated system setup bash script for a remote Linux (Ubuntu) server.
 - 🔒 Installs and configures Certbot
 - 💻 Installs Code Server
 - 🐘 Installs PostgreSQL
-- 🛠️ Installs essential development packages
+- 🛠️ Installs essential development packages (via Chocolatey)
 
 ### 📚 Prerequisites
 
-Ensure you have an updated system:
+Ensure you have the latest Windows updates installed and PowerShell execution policy allows running scripts.
 
-```bash
-sudo apt update && sudo apt upgrade -y
+Set the execution policy (run PowerShell as Administrator):
+
+```powershell
+Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
 ```
 
-It is recommended you reboot the system as some system updates may require rebooting the server to take effect:
+It is recommended you reboot the system after major Windows updates:
 
-```bash
-sudo reboot
-```
-
-Unless you have the need to, we highly recommend allowing OpenSSH in the FireWall list:
-
-```bash
-sudo apt install ufw
-sudo ufw allow OpenSSH
-sudo ufw enable
+```powershell
+Restart-Computer
 ```
 
 ### 🚀 Global Quick Setup
 
-**Step 1:** Run this single command on your fresh Ubuntu server to automatically configure everything:
+**Step 1:** Open PowerShell as Administrator and run this command to automatically configure everything:
 
-```bash
-bash -c "$(curl -sSL https://raw.githubusercontent.com/christianwhocodes/foundry/main/system/setup.sh)"
+```powershell
+Invoke-Expression (Invoke-WebRequest -Uri "https://raw.githubusercontent.com/christianwhocodes/foundry/main/system/setup.ps1" -UseBasicParsing).Content
 ```
 
-**Step 2:** Restart the session for changes to fully take effect:
+**Step 2:** Restart your PowerShell session for changes to fully take effect:
 
-```bash
-source ~/.bashrc && exec /bin/bash
+```powershell
+# Close and reopen PowerShell as Administrator
 ```
 
 ---
 
-## 👤 User Setup _(non-sudo)_
+## 👤 User Setup _(non-administrator)_
 
-Automated user setup bash script for a remote Linux (Ubuntu) server.
+Automated user setup PowerShell script for Windows.
 
 ### ✨ What User Setup Does
 
 - ⚙️ Creates Code Server config file for the user
 - 📗 Installs uv Python package manager (Does not install Python)
-- 📗 Install nvm Node package manager (Does not install Nodejs and npm themselves)
-- 📁 Creates a `repos` folder in the `/home/[USER]` directory
-- 🔧 Sets up bash aliases
+- 📗 Install nvm Node package manager for Windows (Does not install Node.js and npm themselves)
+- 📁 Creates a `repos` folder in the user's home directory
+- 🔧 Sets up PowerShell profile with useful aliases and functions
 - ⚙️ Configures Git global user name and email
 - 🔑 Generates and configures SSH key (id_ed25519)
 
 ### 📚 User Prerequisites
 
-To create a new user, login as root or a user with sudo privileges, then follow the steps below:
+To create a new user on Windows, follow standard Windows user management:
 
-Create the user:
+1. Open Settings → Accounts → Family & other users
+2. Click "Add someone else to this PC"
+3. Follow the prompts to create a new user account
 
-```bash
-sudo adduser developer
-```
-
-_(Optional)_ Give the user sudo privileges:
-
-```bash
-sudo usermod -aG sudo developer
-```
-
-_(Optional)_ Allow the user to login via passwordless (ssh-key) ssh:
-
-```bash
-sudo rsync --archive --chown=developer:developer ~/.ssh /home/developer
-```
+_(Optional)_ Give the user administrator privileges through User Accounts in Control Panel.
 
 ### 🚀 User Quick Setup
 
 Login as the new user:
 
-| Standard Login              | With SSH Key                                |
-| --------------------------- | ------------------------------------------- |
-| `ssh developer@example.com` | `ssh -i /path/to/key developer@example.com` |
+**Step 1:** Open PowerShell and run the command:
 
-**Step 1:** Run the command on your new user fresh logged-in session:
-
-```bash
-bash -c "$(curl -sSL https://raw.githubusercontent.com/christianwhocodes/foundry/main/user/setup.sh)"
+```powershell
+Invoke-Expression (Invoke-WebRequest -Uri "https://raw.githubusercontent.com/christianwhocodes/foundry/main/user/setup.ps1" -UseBasicParsing).Content
 ```
 
 > ⚠️ Important: The script will output:
@@ -117,70 +96,100 @@ bash -c "$(curl -sSL https://raw.githubusercontent.com/christianwhocodes/foundry
 >
 > Save both of these for future use.
 
-**Step 2:** Restart the session for changes to fully take effect:
+**Step 2:** Restart your PowerShell session for changes to fully take effect:
 
-```bash
-source ~/.bashrc && exec /bin/bash
+```powershell
+# Close and reopen PowerShell
 ```
 
 **Step 3 (Optional):** Install Node.js, Python, and global packages:
 
-```bash
-nvm install node
+```powershell
+nvm install latest
+nvm use latest
 npm install -g npm@latest pm2 eslint
 uv python install
 ```
 
 ---
 
-## 👤 Post User Setup _(sudo required)_
+## 👤 Post User Setup _(Administrator required)_
 
-After completing the user setup, a sudo user or administrator must enable and start the code-server service for the new user.
+After completing the user setup, an administrator must enable and start the code-server service for the new user.
 
 ### 🔐 Enable Code Server Service
 
-Login as root or a user with sudo privileges, then run:
+On Windows, you can use Task Scheduler or NSSM (Non-Sucking Service Manager) to run code-server as a service.
 
-```bash
-sudo systemctl enable --now code-server@developer
+**Option 1: Using Task Scheduler**
+
+1. Open Task Scheduler
+2. Create a new task that runs at user logon
+3. Set the action to run: `code-server`
+
+**Option 2: Using NSSM (Recommended)**
+
+First, install NSSM via Chocolatey (as Administrator):
+
+```powershell
+choco install nssm -y
 ```
 
-Replace `developer` with the actual username you created.
+Then create the service:
+
+```powershell
+nssm install code-server-username "C:\Program Files\code-server\bin\code-server.cmd"
+nssm set code-server-username AppDirectory "C:\Users\username"
+nssm set code-server-username DisplayName "Code Server - username"
+nssm start code-server-username
+```
+
+Replace `username` with the actual username you created.
 
 ### ✅ Verify Service Status
 
 Check if the service is running properly:
 
-```bash
-sudo systemctl status code-server@developer
+```powershell
+Get-Service code-server-username
 ```
 
-You should see the service as `active (running)`.
+You should see the service as `Running`.
 
 ### 🌐 Access Code Server
 
 Once the service is running, you can access Code Server at:
 
 ```
-http://your-server-ip:8080
+http://localhost:8080
 ```
 
 Use the password and port number provided during the user setup to login.
 
-### 🔐 SSH Port Forwarding _(Recommended for Remote Access)_
+### 🔐 SSH Port Forwarding _(For Remote Access)_
 
-For secure access from your local computer, use SSH port forwarding instead of exposing Code Server directly:
+For secure remote access to a Windows machine running Code Server, you can use SSH port forwarding if you have OpenSSH Server enabled on Windows.
+
+**First, enable OpenSSH Server on Windows (as Administrator):**
+
+```powershell
+Add-WindowsCapability -Online -Name OpenSSH.Server
+Start-Service sshd
+Set-Service -Name sshd -StartupType 'Automatic'
+```
+
+**Then from your local computer:**
 
 **With SSH Key:**
 
 ```bash
-ssh -L 8080:localhost:8080 -i /path/to/key developer@your-server-ip
+ssh -L 8080:localhost:8080 -i /path/to/key username@your-windows-ip
 ```
 
 **Without SSH Key (password authentication):**
 
 ```bash
-ssh -L 8080:localhost:8080 developer@your-server-ip
+ssh -L 8080:localhost:8080 username@your-windows-ip
 ```
 
 Then access Code Server locally at:
