@@ -48,6 +48,9 @@ RANDOM_PASS=$(openssl rand -base64 12)
 echo "$RANDOM_PASS" > "$TMP_DIR/code-server-pass.tmp"
 echo "$PORT" > "$TMP_DIR/code-server-port.tmp" # This is for internal 'user' setup use only,
 
+# Create directory if it doesn't exist
+mkdir -p "/tmp/code-server-port"
+
 if ! echo "$PORT" > "/tmp/code-server-port/$USER.tmp"; then
     echo -e "${RED}❌ Failed to write port number to temporary file${NC}"
     exit 1
