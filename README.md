@@ -70,7 +70,6 @@ Automated user setup bash script for a remote Linux (Ubuntu) server.
 - 📗 Installs uv Python package manager (Does not install Python)
 - 📗 Install nvm Node package manager (Does not install Nodejs and npm themselves)
 - 📁 Creates a `repos` folder in the `/home/[USER]` directory
-- 🔧 Sets up bash aliases
 - ⚙️ Configures Git global user name and email
 - 🔑 Generates and configures SSH key (id_ed25519)
 

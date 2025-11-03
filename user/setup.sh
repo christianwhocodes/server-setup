@@ -48,8 +48,7 @@ CODE_SERVER_PASS=$(cat "$TMP_DIR/code-server-pass.tmp")
 
 download_and_run "uv.sh" 
 download_and_run "nvm.sh"  
-download_and_run "repos.sh" 
-download_and_run "bash-aliases.sh"
+download_and_run "repos.sh"
 download_and_run "git-ssh.sh" 
  
 # Cleanup 
