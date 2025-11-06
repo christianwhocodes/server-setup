@@ -354,7 +354,7 @@ jobs:
       - name: Setup code-server for user
         if: inputs.setup_code_server_user == true
         run: |
-          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ inputs.target_user }}@${{ inputs.server_host }} bash <<ENDSSH
+          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ inputs.target_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
             source /tmp/user.sh
             
@@ -381,7 +381,7 @@ jobs:
       - name: Setup nvm Node.js manager
         if: inputs.setup_nvm == true
         run: |
-          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ inputs.target_user }}@${{ inputs.server_host }} bash <<ENDSSH
+          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ inputs.target_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
             source /tmp/user.sh
             
@@ -407,7 +407,7 @@ jobs:
       - name: Setup Git and SSH
         if: inputs.setup_git_ssh == true
         run: |
-          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ inputs.target_user }}@${{ inputs.server_host }} bash <<ENDSSH
+          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ inputs.target_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
             source /tmp/user.sh
             
