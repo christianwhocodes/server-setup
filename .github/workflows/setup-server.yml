@@ -107,6 +107,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Validate inputs
+        id: validate
         run: |
           # Validate git inputs for git_ssh setup
           if [[ "${{ inputs.setup_git_ssh }}" == "true" ]]; then
@@ -125,11 +126,14 @@ jobs:
           # Check if any system modules are enabled
           SYSTEM_MODULES="${{ inputs.setup_openssh_ufw }}|${{ inputs.setup_packages }}|${{ inputs.setup_nginx }}|${{ inputs.setup_certbot }}|${{ inputs.setup_code_server_system }}|${{ inputs.setup_postgres }}"
           if [[ "$SYSTEM_MODULES" == *"true"* ]]; then
+            echo "has_system_modules=true" >> $GITHUB_OUTPUT
             echo "⚠️  Note: System setup modules require SUDO_ACCESS_USER to be configured"
             if [[ -z "${{ vars.SUDO_ACCESS_USER }}" && -z "${{ secrets.SUDO_ACCESS_USER }}" ]]; then
               echo "❌ Error: SUDO_ACCESS_USER variable or secret must be set for system operations"
               exit 1
             fi
+          else
+            echo "has_system_modules=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Setup SSH key
@@ -149,8 +153,7 @@ jobs:
           fi
           
           # For initial connection, use SUDO_ACCESS_USER if any system setup is needed
-          SYSTEM_MODULES="${{ inputs.setup_openssh_ufw }}|${{ inputs.setup_packages }}|${{ inputs.setup_nginx }}|${{ inputs.setup_certbot }}|${{ inputs.setup_code_server_system }}|${{ inputs.setup_postgres }}"
-          if [[ "$SYSTEM_MODULES" == *"true"* ]] && [[ -n "$SUDO_USER" ]]; then
+          if [[ "${{ steps.validate.outputs.has_system_modules }}" == "true" ]] && [[ -n "$SUDO_USER" ]]; then
             echo "ssh_user=$SUDO_USER" >> $GITHUB_OUTPUT
             echo "Using SUDO_ACCESS_USER: $SUDO_USER"
           else
@@ -527,5 +530,7 @@ jobs:
       - name: Cleanup
         if: always()
         run: |
-          rm -f ~/.ssh/deploy_key
+          # Clean up remote scripts first (while SSH key still exists)
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ steps.ssh_user.outputs.ssh_user }}@${{ inputs.server_host }} "rm -f /tmp/system.sh /tmp/user.sh" 2>/dev/null || true
+          # Then clean up local deploy key
+          rm -f ~/.ssh/deploy_key
