@@ -15,7 +15,12 @@ SETUP_TYPE="system"
 TMP_DIR="/tmp/foundry/$SETUP_TYPE"
 mkdir -p "$TMP_DIR"
 
-BASE_URL="https://raw.githubusercontent.com/christianwhocodes/foundry/main/$SETUP_TYPE/scripts"
+# Use environment variable or default to main repository
+FOUNDRY_REPO_OWNER="${FOUNDRY_REPO_OWNER:-christianwhocodes}"
+FOUNDRY_REPO_NAME="${FOUNDRY_REPO_NAME:-foundry}"
+FOUNDRY_REPO_BRANCH="${FOUNDRY_REPO_BRANCH:-main}"
+
+BASE_URL="https://raw.githubusercontent.com/${FOUNDRY_REPO_OWNER}/${FOUNDRY_REPO_NAME}/${FOUNDRY_REPO_BRANCH}/$SETUP_TYPE/scripts"
 
 download_and_run() {
     local script="$1"
