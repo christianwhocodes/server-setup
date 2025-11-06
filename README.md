@@ -47,9 +47,9 @@ Deploy and configure your server automatically using GitHub Actions - no manual 
 
 ### 📚 Prerequisites
 
-1. **Server SSH Key**: Generate an SSH key pair for server access
-2. **GitHub Repository**: Fork this repository or use your own
-3. **GitHub Secrets**: Add your SSH private key as a secret
+1. **Fork this repository**: You'll need your own copy to store SSH keys as secrets
+2. **Server SSH Key**: Generate an SSH key pair for server access
+3. **GitHub Secrets**: Add your SSH private key as a secret to your forked repository
 4. **GitHub Variables** (optional): Configure custom values
 
 ### 🔧 Setup Instructions
