@@ -88,6 +88,18 @@ uv_setup() {
         echo -e "${RED}❌ Failed to install uv${NC}"
         exit 1
     fi
+
+    # Try to install latest Python using uv's binary path directly
+    UV_BIN="$HOME/.local/bin/uv"
+    if [ -f "$UV_BIN" ]; then
+        if ! "$UV_BIN" python install; then
+            echo -e "${BLUE}ℹ️  You can install Python manually after restarting your shell with: uv python install${NC}"
+        else
+            echo -e "${GREEN}✅ Python installed successfully with uv${NC}"
+        fi
+    else
+        echo -e "${BLUE}ℹ️  You can install Python manually after restarting your shell with: uv python install${NC}"
+    fi
 }
 
 nvm_setup() {
@@ -103,7 +115,19 @@ nvm_setup() {
     export NVM_DIR="$HOME/.nvm"
     [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 
-    echo -e "${GREEN}✅ nvm is now available in this session${NC}"
+    if command -v nvm >/dev/null 2>&1; then
+        if ! nvm install node; then
+            echo -e "${BLUE}ℹ️  You can install Node.js manually after restarting your shell with: nvm install node${NC}"
+        else
+            echo -e "${GREEN}✅ Node.js installed successfully with nvm${NC}"
+            
+            if npm install -g npm@latest; then
+                echo -e "${GREEN}✅ npm updated successfully${NC}"
+            fi
+        fi
+    else
+        echo -e "${BLUE}ℹ️  You can install Node.js manually after restarting your shell with: nvm install node${NC}"
+    fi
 }
 
 repos_setup() {
