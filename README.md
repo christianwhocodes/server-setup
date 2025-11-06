@@ -21,7 +21,7 @@ Automatically setup your Linux server with development tools and services using 
 
 **User Modules** (per-user):
 - ⚙️ **Code Server Config** - User-specific code-server setup
-- 📗 **uv** - Python package manager with automatic Python installation
+- 🐍 **uv** - Python package manager with automatic Python installation
 - 📗 **nvm** - Node.js version manager with automatic Node.js installation
 - 📁 **Repos Directory** - Creates `~/repos` folder for projects
 - ⚙️ **Git Configuration** - Sets up global Git user name and email
@@ -52,7 +52,7 @@ Navigate to your repository's **Settings** → **Secrets and variables** → **A
 |-------------|-------------|-------|
 | `SERVER_SSH_KEY` | SSH private key for server access | Entire content of your private key file |
 
-**Note:** The corresponding public key must be in your sudo user's `~/.ssh/authorized_keys` on the server.
+**Important:** The corresponding public key must be in your sudo user's `~/.ssh/authorized_keys` on the server.
 
 ### 2. Configure GitHub Variables
 
@@ -64,6 +64,10 @@ In the same section, switch to the **Variables** tab:
 |---------------|-------------|---------|
 | `SUDO_ACCESS_USER` | User with passwordless sudo | `ubuntu` or `root` |
 
+**Note:** This user is used for system-level operations and must already exist on the server with:
+- Passwordless sudo access
+- SSH access using the `SERVER_SSH_KEY`
+
 **Optional Variables:**
 
 | Variable Name | Description | Default |
@@ -71,6 +75,8 @@ In the same section, switch to the **Variables** tab:
 | `NVM_VERSION` | Node Version Manager version | `v0.40.3` |
 | `CODE_SERVER_PORT_START` | Code server port range start | `8080` |
 | `CODE_SERVER_PORT_END` | Code server port range end | `8100` |
+
+See [VARIABLES.md](.github/VARIABLES.md) for more details.
 
 ### 3. Choose Your Setup Scenario
 
@@ -125,6 +131,26 @@ Install one new tool to an existing setup (idempotent):
 
 ---
 
+## 🔑 Understanding User Management
+
+**Two Types of Users:**
+
+1. **SUDO_ACCESS_USER** (configured in GitHub Variables/Secrets)
+   - Used for system operations (installing packages, configuring services)
+   - Must already exist on the server
+   - Needs passwordless sudo and SSH access with `SERVER_SSH_KEY`
+   - Example: `ubuntu`, `root`, or your admin user
+
+2. **target_user** (specified in workflow inputs)
+   - The user you want to configure with development tools
+   - Can be created automatically if it doesn't exist
+   - Receives user-level configurations (code-server, nvm, uv, etc.)
+   - Can optionally be given sudo access when created
+
+**SSH Keys:**
+- `SERVER_SSH_KEY`: Used by GitHub Actions to connect to the server (add to `SUDO_ACCESS_USER`'s authorized_keys)
+- `ssh_public_key` (input): Optional public key for the new `target_user` (only when creating a user)
+
 ### 4. Run the Workflow
 
 1. Go to **Actions** → **Setup Server**
@@ -137,7 +163,7 @@ Install one new tool to an existing setup (idempotent):
 4. Configure user creation options (if needed):
    - **Create user if missing**: Auto-create the user
    - **Make user sudo**: Give new user passwordless sudo access
-   - **SSH public key**: Add SSH key for passwordless login
+   - **SSH public key**: Add SSH key for passwordless login to new user
 
 5. Select your modules based on the scenario above
 
