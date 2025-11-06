@@ -1,4 +1,4 @@
-name: Deploy Server Setup
+name: Setup Server
 
 on:
   workflow_dispatch:

@@ -20,20 +20,20 @@ This guide explains how to use the GitHub Actions workflow to automatically depl
 1. Generate an SSH key (if needed):
 
    ```bash
-   ssh-keygen -t ed25519 -f ~/.ssh/foundry_deploy
+   ssh-keygen -t ed25519 -f ~/.ssh/foundry_setup
    ```
 
 2. Copy public key to server:
 
    ```bash
-   ssh-copy-id -i ~/.ssh/foundry_deploy.pub root@your-server-ip
+   ssh-copy-id -i ~/.ssh/foundry_setup.pub root@your-server-ip
    ```
 
 3. Add private key to GitHub:
    - Go to: **Settings** → **Secrets and variables** → **Actions** → **Secrets**
    - Click **New repository secret**
    - Name: `SERVER_SSH_KEY`
-   - Value: Paste content of `~/.ssh/foundry_deploy` (private key)
+   - Value: Paste content of `~/.ssh/foundry_setup` (private key)
 
 ### Step 2: (Optional) Configure Repository Variables
 
@@ -42,19 +42,17 @@ See [VARIABLES.md](VARIABLES.md) for available variables.
 ### Step 3: Run the Workflow
 
 1. Go to **Actions** tab in your repository
-2. Select **Deploy Server Setup** workflow
+2. Select **Setup Server** workflow
 3. Click **Run workflow** (top right)
 4. Fill in the form:
 
    **For System Setup:**
-
    - Setup type: `system` or `both`
    - Server host: `your-server-ip`
    - Server user: `root`
    - Server port: `22` (or your custom SSH port)
 
    **For User Setup:**
-
    - Setup type: `user` or `both`
    - Server host: `your-server-ip`
    - Server user: `developer` (or your username)
@@ -137,7 +135,7 @@ Server user: root
 
 ### Scenario 4: Multiple Servers
 
-Run the workflow multiple times with different server IPs to deploy to multiple servers.
+Run the workflow multiple times with different server IPs to setup multiple servers.
 
 ## Troubleshooting
 

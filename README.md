@@ -12,7 +12,7 @@ Automatically setup your Linux server with development tools and services!
 
 You can set up your server in two ways:
 
-1. **Automated Deployment** - Use GitHub Actions to deploy remotely (Recommended)
+1. **Automated Setup** - Use GitHub Actions to set up remotely (Recommended)
 2. **Manual Setup** - Run scripts directly on your server via SSH
 
 ## ✨ What Gets Installed
@@ -36,7 +36,7 @@ You can set up your server in two ways:
 
 ---
 
-## 🤖 Automated Deployment with GitHub Actions
+## 🤖 Automated Setup with GitHub Actions
 
 Deploy and configure your server automatically using GitHub Actions - no manual SSH required!
 
@@ -78,7 +78,7 @@ Note: The workflow always uses the repository and commit that triggered the run.
 
 #### 3. Run the Workflow
 
-1. Go to **Actions** → **Deploy Server Setup**
+1. Go to **Actions** → **Setup Server**
 2. Click **Run workflow**
 3. Fill in the required inputs:
    - **Setup type**: Choose `system`, `user`, or `both`
