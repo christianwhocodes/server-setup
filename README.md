@@ -84,7 +84,7 @@ Create a new user with complete development environment:
 
 **System Modules:** ✅ All (OpenSSH/UFW, Packages, Nginx, Certbot, Code-server, PostgreSQL)  
 **User Modules:** ✅ All (Code-server config, uv, nvm, repos directory, Git/SSH)  
-**User Creation:** Create user, make sudo, add SSH key
+**User Creation:** Create user (optionally with sudo and SSH access)
 
 **Perfect for:** Setting up a brand new development server from scratch
 
@@ -96,7 +96,7 @@ Just user-level tools without touching system services:
 
 **System Modules:** ❌ None  
 **User Modules:** ✅ All (Code-server config, uv, nvm, repos directory, Git/SSH)  
-**User Creation:** Use existing user or create new non-sudo user
+**User Creation:** Use existing user or create new user (optionally with sudo and SSH access)
 
 **Perfect for:** Adding a new developer to an already configured server
 
