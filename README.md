@@ -15,6 +15,27 @@ You can set up your server in two ways:
 1. **Automated Deployment** - Use GitHub Actions to deploy remotely (Recommended)
 2. **Manual Setup** - Run scripts directly on your server via SSH
 
+## ✨ What Gets Installed
+
+**System Setup:**
+
+- 🌐 Installs and configures Nginx
+- 🔒 Installs and configures Certbot
+- 💻 Installs Code Server
+- 🐘 Installs PostgreSQL
+- 🛠️ Installs essential development packages
+
+**User Setup:**
+
+- ⚙️ Creates Code Server config file for the user
+- 📗 Installs uv Python package manager (Does not install Python)
+- 📗 Installs nvm Node package manager (Does not install Nodejs and npm themselves)
+- 📁 Creates a `repos` folder in the `/home/[USER]` directory
+- ⚙️ Configures Git global user name and email
+- 🔑 Generates and configures SSH key (id_ed25519)
+
+---
+
 ## 🤖 Automated Deployment with GitHub Actions
 
 Deploy and configure your server automatically using GitHub Actions - no manual SSH required!
@@ -72,7 +93,7 @@ Navigate to **Settings** → **Secrets and variables** → **Actions** → **Var
 The workflow will:
 
 - Connect to your server via SSH
-- Run the appropriate setup scripts
+- Run the appropriate setup scripts based on your selection
 - Display post-setup instructions
 
 ---
@@ -80,14 +101,6 @@ The workflow will:
 ## 🌍 Manual Setup: Global (System) Setup
 
 Automated system setup bash script for a remote Linux (Ubuntu) server _(sudo required)_.
-
-### ✨ What Global Setup Does
-
-- 🌐 Installs and configures Nginx
-- 🔒 Installs and configures Certbot
-- 💻 Installs Code Server
-- 🐘 Installs PostgreSQL
-- 🛠️ Installs essential development packages
 
 ### 📚 Prerequisites
 
@@ -141,15 +154,6 @@ bash -c "$(curl -sSL https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME
 ## 👤 Manual Setup: User Setup
 
 Automated user setup bash script for a remote Linux (Ubuntu) server _(non-sudo)_.
-
-### ✨ What User Setup Does
-
-- ⚙️ Creates Code Server config file for the user
-- 📗 Installs uv Python package manager (Does not install Python)
-- 📗 Install nvm Node package manager (Does not install Nodejs and npm themselves)
-- 📁 Creates a `repos` folder in the `/home/[USER]` directory
-- ⚙️ Configures Git global user name and email
-- 🔑 Generates and configures SSH key (id_ed25519)
 
 ### 📚 Prerequisites
 
