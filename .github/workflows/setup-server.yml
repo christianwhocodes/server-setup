@@ -17,7 +17,7 @@ on:
         required: true
         type: string
       server_user:
-        description: "SSH user (use root/sudo user for system setup, use target user for user setup)"
+        description: "SSH user (use sudo user for [system/both] setup, use sudo/non-sudo user for [user] setup)"
         required: true
         type: string
       server_port:
