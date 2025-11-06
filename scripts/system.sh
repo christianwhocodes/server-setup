@@ -1,4 +1,8 @@
 #!/bin/bash
+# This script contains modular system setup functions
+# Functions are meant to be sourced and called individually for idempotent operations
+# The calling context should use 'set -e' to ensure errors are properly handled
+
 set -e
 
 export DEBIAN_FRONTEND=noninteractive
@@ -6,6 +10,7 @@ export DEBIAN_FRONTEND=noninteractive
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 RED='\033[0;31m'
+YELLOW='\033[1;33m'
 NC='\033[0m'
 
 openssh_setup() {
@@ -21,15 +26,31 @@ openssh_setup() {
   if command -v ufw >/dev/null 2>&1; then
     # Check if OpenSSH rule already exists
     if ! ufw status | grep -q "OpenSSH.*ALLOW"; then
+      echo -e "${YELLOW}Adding OpenSSH rule to UFW...${NC}"
       if ! ufw allow OpenSSH; then
         echo -e "${RED}⚠️  Warning: Failed to allow OpenSSH in ufw${NC}"
+        return 0
       fi
+    else
+      echo -e "${GREEN}✅ OpenSSH rule already exists in UFW${NC}"
     fi
     
-    if ufw status | grep -q "Status: inactive"; then
-      if ! ufw --force enable; then
-        echo -e "${RED}⚠️  Warning: Failed to enable ufw${NC}"
+    # Verify the rule was actually added before enabling
+    if ufw status | grep -q "OpenSSH.*ALLOW"; then
+      if ufw status | grep -q "Status: inactive"; then
+        echo -e "${YELLOW}Enabling UFW firewall...${NC}"
+        if ! ufw --force enable; then
+          echo -e "${RED}⚠️  Warning: Failed to enable ufw${NC}"
+          return 0
+        fi
+        echo -e "${GREEN}✅ UFW enabled successfully${NC}"
+      else
+        echo -e "${GREEN}✅ UFW already enabled${NC}"
       fi
+    else
+      echo -e "${RED}❌ Error: OpenSSH rule not confirmed in UFW, skipping enable${NC}"
+      echo -e "${RED}   This is a safety measure to prevent lockout${NC}"
+      return 1
     fi
   fi
 }
@@ -47,6 +68,8 @@ necessary_packages_setup() {
     echo -e "${RED}❌ Failed to install necessary packages${NC}"
     exit 1
   fi
+  
+  echo -e "${GREEN}✅ All packages installed successfully${NC}"
 }
 
 nginx_setup() {
@@ -106,6 +129,26 @@ location / {
     proxy_cache_bypass $http_upgrade;
 }
 EOF
+
+  cat > /etc/nginx/snippets/code-server-proxy.conf <<'EOF'
+location / {
+    proxy_pass http://127.0.0.1:$code_server_port;
+    include proxy_params;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_cache_bypass $http_upgrade;
+    proxy_buffering off;
+}
+EOF
+
+  # Validate nginx configuration
+  if ! nginx -t 2>/dev/null; then
+    echo -e "${YELLOW}⚠️  Warning: Nginx configuration test failed${NC}"
+    echo -e "${YELLOW}   You may need to check /etc/nginx/nginx.conf${NC}"
+  else
+    echo -e "${GREEN}✅ Nginx configuration is valid${NC}"
+  fi
 }
 
 certbot_setup() {
@@ -138,6 +181,8 @@ certbot_setup() {
   fi
 
   ln -sf /snap/bin/certbot /usr/bin/certbot
+  
+  echo -e "${GREEN}✅ Certbot installed successfully${NC}"
 }
 
 code_server_setup() {
@@ -161,20 +206,9 @@ code_server_setup() {
     echo -e "${GREEN}✅ code-server installed successfully${NC}"
   fi
 
-  # Create or update snippet file
-  mkdir -p /etc/nginx/snippets
-  
-  cat > /etc/nginx/snippets/code-server-proxy.conf <<'EOF'
-location / {
-    proxy_pass http://127.0.0.1:$code_server_port;
-    include proxy_params;
-    proxy_http_version 1.1;
-    proxy_set_header Upgrade $http_upgrade;
-    proxy_set_header Connection "upgrade";
-    proxy_cache_bypass $http_upgrade;
-    proxy_buffering off;
-}
-EOF
+  # Note: code-server-proxy.conf snippet is now created in nginx_setup
+  # This ensures it's available if nginx is installed, even if code-server isn't
+  echo -e "${GREEN}✅ code-server system setup completed${NC}"
 }
 
 postgres_setup() {
@@ -206,24 +240,3 @@ postgres_setup() {
 
   echo -e "${GREEN}✅ PostgreSQL is running${NC}"
 }
-
-main() {
-  echo -e "${BLUE}=== Start Setup (system) Configuration ===${NC}"
-  echo ""
-
-  if ! apt-get update -y; then
-    echo -e "${RED}❌ Failed to update package lists${NC}"
-    exit 1
-  fi
-
-  openssh_setup
-  necessary_packages_setup
-  nginx_setup
-  certbot_setup
-  code_server_setup
-  postgres_setup
-
-  echo -e "${GREEN}=== ✅ Finished Setup (system) Configuration ===${NC}"
-}
-
-main

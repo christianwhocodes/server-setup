@@ -3,21 +3,8 @@ name: Setup Server
 on:
   workflow_dispatch:
     inputs:
-      setup_type:
-        description: "Type of setup to run"
-        required: true
-        type: choice
-        options:
-          - system
-          - user
-          - both
-        default: "both"
       server_host:
         description: "Server IP address or hostname"
-        required: true
-        type: string
-      server_user:
-        description: "SSH user (use sudo user for [system/both] setup, use sudo/non-sudo user for [user] setup)"
         required: true
         type: string
       server_port:
@@ -25,12 +12,87 @@ on:
         required: false
         type: string
         default: "22"
+      target_user:
+        description: "Target user to setup (will be created if doesn't exist)"
+        required: true
+        type: string
+      create_user_if_missing:
+        description: "Create user if it doesn't exist"
+        required: false
+        type: boolean
+        default: true
+      make_user_sudo:
+        description: "Make new user a sudo user (only when creating new user)"
+        required: false
+        type: boolean
+        default: false
+      ssh_public_key:
+        description: "SSH public key to add to authorized_keys (only when creating new user)"
+        required: false
+        type: string
+      # System setup modules
+      setup_openssh_ufw:
+        description: "Setup OpenSSH and UFW firewall"
+        required: false
+        type: boolean
+        default: false
+      setup_packages:
+        description: "Install necessary development packages"
+        required: false
+        type: boolean
+        default: false
+      setup_nginx:
+        description: "Install and configure Nginx"
+        required: false
+        type: boolean
+        default: false
+      setup_certbot:
+        description: "Install and configure Certbot"
+        required: false
+        type: boolean
+        default: false
+      setup_code_server_system:
+        description: "Install code-server system-wide"
+        required: false
+        type: boolean
+        default: false
+      setup_postgres:
+        description: "Install and configure PostgreSQL"
+        required: false
+        type: boolean
+        default: false
+      # User setup modules
+      setup_code_server_user:
+        description: "Configure code-server for user"
+        required: false
+        type: boolean
+        default: false
+      setup_uv:
+        description: "Install uv Python manager for user"
+        required: false
+        type: boolean
+        default: false
+      setup_nvm:
+        description: "Install nvm Node.js manager for user"
+        required: false
+        type: boolean
+        default: false
+      setup_repos_dir:
+        description: "Create repos directory for user"
+        required: false
+        type: boolean
+        default: false
+      setup_git_ssh:
+        description: "Setup Git config and SSH keys for user"
+        required: false
+        type: boolean
+        default: false
       git_user_name:
-        description: "Git user name (required for user setup)"
+        description: "Git user name (required for setup_git_ssh)"
         required: false
         type: string
       git_user_email:
-        description: "Git user email (required for user setup)"
+        description: "Git user email (required for setup_git_ssh)"
         required: false
         type: string
 
@@ -45,11 +107,12 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Validate inputs
+        id: validate
         run: |
-          # Validate git inputs for user setup
-          if [[ "${{ inputs.setup_type }}" == "user" || "${{ inputs.setup_type }}" == "both" ]]; then
+          # Validate git inputs for git_ssh setup
+          if [[ "${{ inputs.setup_git_ssh }}" == "true" ]]; then
             if [[ -z "${{ inputs.git_user_name }}" || -z "${{ inputs.git_user_email }}" ]]; then
-              echo "❌ Error: git_user_name and git_user_email are required for user setup"
+              echo "❌ Error: git_user_name and git_user_email are required for setup_git_ssh"
               exit 1
             fi
             
@@ -60,81 +123,342 @@ jobs:
             fi
           fi
 
-          # Warn if running both as non-root
-          if [[ "${{ inputs.setup_type }}" == "both" || "${{ inputs.setup_type }}" == "system" ]]; then
-            echo "⚠️  Note: System setup requires root or sudo privileges"
+          # Check if any system modules are enabled
+          SYSTEM_MODULES="${{ inputs.setup_openssh_ufw }}|${{ inputs.setup_packages }}|${{ inputs.setup_nginx }}|${{ inputs.setup_certbot }}|${{ inputs.setup_code_server_system }}|${{ inputs.setup_postgres }}"
+          if [[ "$SYSTEM_MODULES" == *"true"* ]]; then
+            echo "has_system_modules=true" >> $GITHUB_OUTPUT
+            echo "⚠️  Note: System setup modules require SUDO_ACCESS_USER to be configured"
+            if [[ -z "${{ vars.SUDO_ACCESS_USER }}" && -z "${{ secrets.SUDO_ACCESS_USER }}" ]]; then
+              echo "❌ Error: SUDO_ACCESS_USER variable or secret must be set for system operations"
+              exit 1
+            fi
+          else
+            echo "has_system_modules=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Setup SSH key
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SERVER_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 700 ~/.ssh
+          
+          # Use cat with heredoc to safely write the key
+          cat > ~/.ssh/deploy_key <<'SSHKEY_EOF'
+          ${{ secrets.SERVER_SSH_KEY }}
+          SSHKEY_EOF
+          
+          # Ensure proper line ending
+          echo "" >> ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
+          
+          # Verify key format
+          if ! ssh-keygen -l -f ~/.ssh/deploy_key >/dev/null 2>&1; then
+            echo "❌ Error: Invalid SSH key format"
+            exit 1
+          fi
+          
           ssh-keyscan -p ${{ inputs.server_port }} -H ${{ inputs.server_host }} >> ~/.ssh/known_hosts 2>/dev/null || true
+
+      - name: Determine SSH user
+        id: ssh_user
+        run: |
+          # Use SUDO_ACCESS_USER if available (prefer secret over var), otherwise use target_user
+          SUDO_USER="${{ secrets.SUDO_ACCESS_USER }}"
+          if [[ -z "$SUDO_USER" ]]; then
+            SUDO_USER="${{ vars.SUDO_ACCESS_USER }}"
+          fi
+          
+          # For initial connection, use SUDO_ACCESS_USER if any system setup is needed
+          if [[ "${{ steps.validate.outputs.has_system_modules }}" == "true" ]] && [[ -n "$SUDO_USER" ]]; then
+            echo "ssh_user=$SUDO_USER" >> $GITHUB_OUTPUT
+            echo "Using SUDO_ACCESS_USER: $SUDO_USER"
+          else
+            echo "ssh_user=${{ inputs.target_user }}" >> $GITHUB_OUTPUT
+            echo "Using target user: ${{ inputs.target_user }}"
+          fi
 
       - name: Test SSH connection
         run: |
-          if ! ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new ${{ inputs.server_user }}@${{ inputs.server_host }} "echo 'SSH connection successful'"; then
+          if ! ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new ${{ steps.ssh_user.outputs.ssh_user }}@${{ inputs.server_host }} "echo 'SSH connection successful'"; then
             echo "❌ Failed to establish SSH connection"
             exit 1
           fi
+
+      - name: Create target user if needed
+        if: inputs.create_user_if_missing == true
+        run: |
+          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ steps.ssh_user.outputs.ssh_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
+            set -e
+            
+            TARGET_USER="${{ inputs.target_user }}"
+            MAKE_SUDO="${{ inputs.make_user_sudo }}"
+            SSH_PUB_KEY="${{ inputs.ssh_public_key }}"
+            
+            # Check if user exists
+            if id "$TARGET_USER" &>/dev/null; then
+              echo "✅ User $TARGET_USER already exists"
+              exit 0
+            fi
+            
+            echo "🔧 Creating user: $TARGET_USER"
+            
+            # Create user with home directory
+            if [[ $EUID -eq 0 ]]; then
+              useradd -m -s /bin/bash "$TARGET_USER"
+            elif command -v sudo >/dev/null 2>&1; then
+              sudo useradd -m -s /bin/bash "$TARGET_USER"
+            else
+              echo "❌ Error: Need root or sudo to create user"
+              exit 1
+            fi
+            
+            # Add to sudo group if requested
+            if [[ "$MAKE_SUDO" == "true" ]]; then
+              echo "🔧 Adding $TARGET_USER to sudo group"
+              if [[ $EUID -eq 0 ]]; then
+                usermod -aG sudo "$TARGET_USER"
+                # Enable passwordless sudo
+                echo "$TARGET_USER ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/$TARGET_USER
+                chmod 440 /etc/sudoers.d/$TARGET_USER
+              elif command -v sudo >/dev/null 2>&1; then
+                sudo usermod -aG sudo "$TARGET_USER"
+                sudo bash -c "echo '$TARGET_USER ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/$TARGET_USER"
+                sudo chmod 440 /etc/sudoers.d/$TARGET_USER
+              fi
+            fi
+            
+            # Add SSH public key if provided
+            if [[ -n "$SSH_PUB_KEY" ]]; then
+              echo "🔑 Adding SSH public key for $TARGET_USER"
+              USER_HOME=$(eval echo ~$TARGET_USER)
+              if [[ $EUID -eq 0 ]]; then
+                mkdir -p "$USER_HOME/.ssh"
+                echo "$SSH_PUB_KEY" >> "$USER_HOME/.ssh/authorized_keys"
+                chmod 700 "$USER_HOME/.ssh"
+                chmod 600 "$USER_HOME/.ssh/authorized_keys"
+                chown -R "$TARGET_USER:$TARGET_USER" "$USER_HOME/.ssh"
+              elif command -v sudo >/dev/null 2>&1; then
+                sudo mkdir -p "$USER_HOME/.ssh"
+                sudo bash -c "echo '$SSH_PUB_KEY' >> '$USER_HOME/.ssh/authorized_keys'"
+                sudo chmod 700 "$USER_HOME/.ssh"
+                sudo chmod 600 "$USER_HOME/.ssh/authorized_keys"
+                sudo chown -R "$TARGET_USER:$TARGET_USER" "$USER_HOME/.ssh"
+              fi
+            fi
+            
+            echo "✅ User $TARGET_USER created successfully"
+          ENDSSH
 
       - name: Upload scripts to server
         run: |
           scp -i ~/.ssh/deploy_key -P ${{ inputs.server_port }} \
             scripts/system.sh scripts/user.sh \
-            ${{ inputs.server_user }}@${{ inputs.server_host }}:/tmp/
+            ${{ steps.ssh_user.outputs.ssh_user }}@${{ inputs.server_host }}:/tmp/
 
-      - name: Run system setup
-        if: inputs.setup_type == 'system' || inputs.setup_type == 'both'
+      - name: Initial system update
+        if: |
+          inputs.setup_openssh_ufw == true ||
+          inputs.setup_packages == true ||
+          inputs.setup_nginx == true ||
+          inputs.setup_certbot == true ||
+          inputs.setup_code_server_system == true ||
+          inputs.setup_postgres == true
         run: |
-          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ inputs.server_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
+          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ steps.ssh_user.outputs.ssh_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
-
-            echo "🚀 Starting system setup..."
-
-            # Check if we have sudo or are root
+            echo "🔄 Running apt-get update..."
             if [[ $EUID -eq 0 ]]; then
-              bash /tmp/system.sh
+              DEBIAN_FRONTEND=noninteractive apt-get update -y
             elif command -v sudo >/dev/null 2>&1; then
-              sudo bash /tmp/system.sh
+              sudo DEBIAN_FRONTEND=noninteractive apt-get update -y
             else
-              echo "❌ Error: System setup requires root or sudo privileges"
+              echo "❌ Error: Need root or sudo for system operations"
               exit 1
             fi
-
-            echo "✅ System setup completed successfully"
           ENDSSH
 
-      - name: Run user setup
-        if: inputs.setup_type == 'user' || inputs.setup_type == 'both'
+      - name: Setup OpenSSH and UFW
+        if: inputs.setup_openssh_ufw == true
         run: |
-          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ inputs.server_user }}@${{ inputs.server_host }} bash <<ENDSSH
+          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ steps.ssh_user.outputs.ssh_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
+            
+            echo "🚀 Setting up OpenSSH and UFW..."
+            if [[ $EUID -eq 0 ]]; then
+              source /tmp/system.sh && openssh_setup
+            elif command -v sudo >/dev/null 2>&1; then
+              sudo bash -c "source /tmp/system.sh && openssh_setup"
+            fi
+            echo "✅ OpenSSH and UFW setup completed"
+          ENDSSH
 
-            echo "🚀 Starting user setup for: ${{ inputs.server_user }}"
+      - name: Setup necessary packages
+        if: inputs.setup_packages == true
+        run: |
+          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ steps.ssh_user.outputs.ssh_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
+            set -e
+            
+            echo "🚀 Installing necessary packages..."
+            if [[ $EUID -eq 0 ]]; then
+              source /tmp/system.sh && necessary_packages_setup
+            elif command -v sudo >/dev/null 2>&1; then
+              sudo bash -c "source /tmp/system.sh && necessary_packages_setup"
+            fi
+            echo "✅ Necessary packages setup completed"
+          ENDSSH
 
-            # Export environment variables
-            export GIT_USER_NAME="${{ inputs.git_user_name }}"
-            export GIT_USER_EMAIL="${{ inputs.git_user_email }}"
-            export NVM_VERSION="${{ vars.NVM_VERSION || 'v0.40.3' }}"
+      - name: Setup Nginx
+        if: inputs.setup_nginx == true
+        run: |
+          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ steps.ssh_user.outputs.ssh_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
+            set -e
+            
+            echo "🚀 Setting up Nginx..."
+            if [[ $EUID -eq 0 ]]; then
+              source /tmp/system.sh && nginx_setup
+            elif command -v sudo >/dev/null 2>&1; then
+              sudo bash -c "source /tmp/system.sh && nginx_setup"
+            fi
+            echo "✅ Nginx setup completed"
+          ENDSSH
+
+      - name: Setup Certbot
+        if: inputs.setup_certbot == true
+        run: |
+          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ steps.ssh_user.outputs.ssh_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
+            set -e
+            
+            echo "🚀 Setting up Certbot..."
+            if [[ $EUID -eq 0 ]]; then
+              source /tmp/system.sh && certbot_setup
+            elif command -v sudo >/dev/null 2>&1; then
+              sudo bash -c "source /tmp/system.sh && certbot_setup"
+            fi
+            echo "✅ Certbot setup completed"
+          ENDSSH
+
+      - name: Setup code-server (system-wide)
+        if: inputs.setup_code_server_system == true
+        run: |
+          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ steps.ssh_user.outputs.ssh_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
+            set -e
+            
+            echo "🚀 Setting up code-server system-wide..."
+            if [[ $EUID -eq 0 ]]; then
+              source /tmp/system.sh && code_server_setup
+            elif command -v sudo >/dev/null 2>&1; then
+              sudo bash -c "source /tmp/system.sh && code_server_setup"
+            fi
+            echo "✅ code-server system setup completed"
+          ENDSSH
+
+      - name: Setup PostgreSQL
+        if: inputs.setup_postgres == true
+        run: |
+          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ steps.ssh_user.outputs.ssh_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
+            set -e
+            
+            echo "🚀 Setting up PostgreSQL..."
+            if [[ $EUID -eq 0 ]]; then
+              source /tmp/system.sh && postgres_setup
+            elif command -v sudo >/dev/null 2>&1; then
+              sudo bash -c "source /tmp/system.sh && postgres_setup"
+            fi
+            echo "✅ PostgreSQL setup completed"
+          ENDSSH
+
+      - name: Setup code-server for user
+        if: inputs.setup_code_server_user == true
+        run: |
+          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ inputs.target_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
+            set -e
+            source /tmp/user.sh
+            
             export CODE_SERVER_PORT_START="${{ vars.CODE_SERVER_PORT_START || '8080' }}"
             export CODE_SERVER_PORT_END="${{ vars.CODE_SERVER_PORT_END || '8100' }}"
+            
+            echo "🚀 Setting up code-server for user..."
+            code_server_setup
+            echo "✅ code-server user setup completed"
+          ENDSSH
 
-            # Run user setup
-            bash /tmp/user.sh
+      - name: Setup uv Python manager
+        if: inputs.setup_uv == true
+        run: |
+          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ inputs.target_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
+            set -e
+            source /tmp/user.sh
+            
+            echo "🚀 Setting up uv..."
+            uv_setup
+            echo "✅ uv setup completed"
+          ENDSSH
 
-            echo "✅ User setup completed successfully"
+      - name: Setup nvm Node.js manager
+        if: inputs.setup_nvm == true
+        run: |
+          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ inputs.target_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
+            set -e
+            source /tmp/user.sh
+            
+            export NVM_VERSION="${{ vars.NVM_VERSION || 'v0.40.3' }}"
+            
+            echo "🚀 Setting up nvm..."
+            nvm_setup
+            echo "✅ nvm setup completed"
+          ENDSSH
+
+      - name: Setup repos directory
+        if: inputs.setup_repos_dir == true
+        run: |
+          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ inputs.target_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
+            set -e
+            source /tmp/user.sh
+            
+            echo "🚀 Setting up repos directory..."
+            repos_setup
+            echo "✅ repos directory setup completed"
+          ENDSSH
+
+      - name: Setup Git and SSH
+        if: inputs.setup_git_ssh == true
+        run: |
+          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ inputs.target_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
+            set -e
+            source /tmp/user.sh
+            
+            export GIT_USER_NAME="${{ inputs.git_user_name }}"
+            export GIT_USER_EMAIL="${{ inputs.git_user_email }}"
+            
+            echo "🚀 Setting up Git and SSH..."
+            git_ssh_setup
+            echo "✅ Git and SSH setup completed"
           ENDSSH
 
       - name: Enable code-server service
-        if: inputs.setup_type == 'user' || inputs.setup_type == 'both'
+        if: inputs.setup_code_server_user == true
         run: |
-          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ inputs.server_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
+          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ inputs.target_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
-
+            
             echo "🔧 Enabling code-server service..."
-
+            
+            # Wait a moment for systemd to recognize the service
+            sleep 2
+            
+            # Check if service file exists
+            SERVICE_FILE=""
+            if [[ $EUID -eq 0 ]]; then
+              SERVICE_FILE="/usr/lib/systemd/user/code-server.service"
+            else
+              SERVICE_FILE="$HOME/.config/systemd/user/code-server.service"
+            fi
+            
+            if [[ ! -f "$SERVICE_FILE" ]] && [[ ! -f "/lib/systemd/system/code-server@.service" ]]; then
+              echo "⚠️  Service file not found. Cannot enable service automatically."
+              echo "   Run manually: systemctl --user enable --now code-server"
+              exit 0
+            fi
+            
             # Try to enable code-server
             if [[ $EUID -eq 0 ]]; then
               # Running as root, enable for root
@@ -155,12 +479,12 @@ jobs:
           ENDSSH
 
       - name: Retrieve setup credentials
-        if: inputs.setup_type == 'user' || inputs.setup_type == 'both'
+        if: inputs.setup_code_server_user == true || inputs.setup_git_ssh == true
         id: credentials
         run: |
           TEMP_DIR=$(mktemp -d)
 
-          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ inputs.server_user }}@${{ inputs.server_host }} bash <<'ENDSSH' > "$TEMP_DIR/output"
+          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ inputs.target_user }}@${{ inputs.server_host }} bash <<'ENDSSH' > "$TEMP_DIR/output"
             # Extract only port and password from config
             CONFIG_PATH="$HOME/.config/code-server/config.yaml"
             if [ -f "$CONFIG_PATH" ]; then
@@ -180,6 +504,10 @@ jobs:
           ENDSSH
 
           # Parse output and set as masked outputs
+          PORT=""
+          PASSWORD=""
+          SSH_KEY=""
+          
           while IFS= read -r line; do
             if [[ "$line" =~ ^CODE_SERVER_PORT= ]]; then
               PORT=${line#*=}
@@ -198,34 +526,63 @@ jobs:
             fi
           done < "$TEMP_DIR/output"
 
+          # Validate we got the expected credentials
+          if [[ "${{ inputs.setup_code_server_user }}" == "true" ]]; then
+            if [[ -z "$PORT" || -z "$PASSWORD" ]]; then
+              echo "::error::Failed to retrieve code-server credentials"
+              echo "::error::Port: $PORT, Password: ${PASSWORD:+[set]}"
+              exit 1
+            fi
+          fi
+          
+          if [[ "${{ inputs.setup_git_ssh }}" == "true" ]]; then
+            if [[ -z "$SSH_KEY" ]]; then
+              echo "::error::Failed to retrieve SSH public key"
+              exit 1
+            fi
+          fi
+
           rm -rf "$TEMP_DIR"
 
       - name: Display setup summary
-        if: inputs.setup_type == 'user' || inputs.setup_type == 'both'
+        if: inputs.setup_code_server_user == true || inputs.setup_git_ssh == true
         run: |
           echo "## ✅ Setup Completed Successfully!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 👤 Configured User" >> $GITHUB_STEP_SUMMARY
-          echo "- **User:** ${{ inputs.server_user }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **User:** ${{ inputs.target_user }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 📋 Code Server Configuration" >> $GITHUB_STEP_SUMMARY
-          echo "- **Port:** ${{ steps.credentials.outputs.port }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Password:** \`${{ steps.credentials.outputs.password }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Access URL:** \`http://${{ inputs.server_host }}:${{ steps.credentials.outputs.port }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🔑 SSH Public Key" >> $GITHUB_STEP_SUMMARY
-          echo "Add this to your Git hosting service (GitHub/GitLab/etc.):" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          echo "${{ steps.credentials.outputs.ssh_key }}" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [[ "${{ inputs.setup_code_server_user }}" == "true" ]]; then
+            echo "### 📋 Code Server Configuration" >> $GITHUB_STEP_SUMMARY
+            echo "- **Port:** ${{ steps.credentials.outputs.port }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Password:** \`${{ steps.credentials.outputs.password }}\`" >> $GITHUB_STEP_SUMMARY
+            echo "- **Access URL:** \`http://${{ inputs.server_host }}:${{ steps.credentials.outputs.port }}\`" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [[ "${{ inputs.setup_git_ssh }}" == "true" ]]; then
+            echo "### 🔑 SSH Public Key" >> $GITHUB_STEP_SUMMARY
+            echo "Add this to your Git hosting service (GitHub/GitLab/etc.):" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            echo "${{ steps.credentials.outputs.ssh_key }}" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+          
           echo "### ⚠️ Important Notes" >> $GITHUB_STEP_SUMMARY
-          echo "- Save the code-server password in a secure location" >> $GITHUB_STEP_SUMMARY
-          echo "- The SSH private key remains on the server at \`~${{ inputs.server_user }}/.ssh/id_ed25519\`" >> $GITHUB_STEP_SUMMARY
-          echo "- If code-server service wasn't enabled, run: \`sudo systemctl enable --now code-server@${{ inputs.server_user }}\`" >> $GITHUB_STEP_SUMMARY
+          if [[ "${{ inputs.setup_code_server_user }}" == "true" ]]; then
+            echo "- Save the code-server password in a secure location" >> $GITHUB_STEP_SUMMARY
+            echo "- If code-server service wasn't enabled, run: \`sudo systemctl enable --now code-server@${{ inputs.target_user }}\`" >> $GITHUB_STEP_SUMMARY
+          fi
+          if [[ "${{ inputs.setup_git_ssh }}" == "true" ]]; then
+            echo "- The SSH private key remains on the server at \`~${{ inputs.target_user }}/.ssh/id_ed25519\`" >> $GITHUB_STEP_SUMMARY
+          fi
 
       - name: Cleanup
         if: always()
         run: |
+          # Clean up remote scripts first (while SSH key still exists)
+          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ steps.ssh_user.outputs.ssh_user }}@${{ inputs.server_host }} "rm -f /tmp/system.sh /tmp/user.sh" 2>/dev/null || true
+          # Then clean up local deploy key
           rm -f ~/.ssh/deploy_key
-          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ inputs.server_user }}@${{ inputs.server_host }} "rm -f /tmp/system.sh /tmp/user.sh" 2>/dev/null || true
