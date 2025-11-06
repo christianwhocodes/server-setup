@@ -1,5 +1,6 @@
 #!/bin/bash
-set -e
+# This script contains modular system setup functions
+# Functions are meant to be sourced and called individually for idempotent operations
 
 export DEBIAN_FRONTEND=noninteractive
 
@@ -206,24 +207,3 @@ postgres_setup() {
 
   echo -e "${GREEN}✅ PostgreSQL is running${NC}"
 }
-
-main() {
-  echo -e "${BLUE}=== Start Setup (system) Configuration ===${NC}"
-  echo ""
-
-  if ! apt-get update -y; then
-    echo -e "${RED}❌ Failed to update package lists${NC}"
-    exit 1
-  fi
-
-  openssh_setup
-  necessary_packages_setup
-  nginx_setup
-  certbot_setup
-  code_server_setup
-  postgres_setup
-
-  echo -e "${GREEN}=== ✅ Finished Setup (system) Configuration ===${NC}"
-}
-
-main

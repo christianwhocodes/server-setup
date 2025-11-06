@@ -1,5 +1,6 @@
 #!/bin/bash
-set -e
+# This script contains modular user setup functions
+# Functions are meant to be sourced and called individually for idempotent operations
 
 export DEBIAN_FRONTEND=noninteractive
 
@@ -212,33 +213,3 @@ git_ssh_setup() {
     chmod 600 ~/.ssh/config
   fi
 }
-
-main() {
-  if [ -z "$GIT_USER_EMAIL" ]; then
-    echo -e "\n${BLUE}=== Git Configuration ===${NC}"
-    read -p "$(echo -e ${BLUE}Enter your git user email \(e.g., user@example.com\): ${NC})" GIT_USER_EMAIL
-    echo -e "${GREEN}➜ Using git user email: ${BLUE}$GIT_USER_EMAIL${NC}\n"
-  fi
-
-  if [ -z "$GIT_USER_NAME" ]; then
-    read -p "$(echo -e ${BLUE}Enter your git user name \(e.g., John Doe\): ${NC})" GIT_USER_NAME
-    echo -e "${GREEN}➜ Using git user name: ${BLUE}$GIT_USER_NAME${NC}\n"
-  fi
-
-  echo -e "${BLUE}=== Setup (user) Configuration ===${NC}"
-  echo ""
-
-  code_server_setup
-  uv_setup
-  nvm_setup
-  repos_setup
-  git_ssh_setup
-
-  echo -e "${GREEN}=== ✅ Finished Setup (user) Configuration ===${NC}"
-  echo -e "${BLUE}Code-server is configured to run on port${NC} $CODE_SERVER_PORT"
-  echo -e "${BLUE}Code-server password:${NC} $CODE_SERVER_PASSWORD"
-  echo -e "${BLUE}SSH public key (add this to your git hosting service):${NC}"
-  cat ~/.ssh/id_ed25519.pub
-}
-
-main
