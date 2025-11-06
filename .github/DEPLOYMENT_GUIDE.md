@@ -70,9 +70,22 @@ See [VARIABLES.md](VARIABLES.md) for available variables.
 
 ### Step 5: Review Outputs
 
-- The workflow attempts to enable the code-server service automatically.
-- Code-server credentials and the generated SSH public key are printed in the run logs.
-- Restarting the shell during the run is handled by the setup scripts.
+After the workflow completes:
+
+- **View the Setup Summary**: Check the workflow run's Summary tab for:
+  - Code-server port and password
+  - Direct access URL
+  - Generated SSH public key (ready to add to GitHub/GitLab)
+  - Important post-setup notes
+- **Review Run Logs**: Check the detailed logs for any warnings or additional information
+- **Code-server service**: The workflow automatically attempts to enable the code-server systemd service. If it fails (due to permissions), you'll see instructions in the summary to enable it manually with: `sudo systemctl enable --now code-server@USERNAME`
+
+**Note:** The workflow does not automatically restart the shell. To use newly installed tools like `nvm` or `uv`, you'll need to:
+
+- Start a new SSH session, or
+- Source the appropriate files: `source ~/.nvm/nvm.sh` and `source ~/.local/bin/env`
+
+**Python and Node.js Installation:** The user setup script attempts to automatically install the latest Python (via uv) and Node.js (via nvm). If these installations fail or are skipped, you'll see instructions in the logs to install them manually after restarting your shell.
 
 ## Deployment Scenarios
 

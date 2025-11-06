@@ -8,13 +8,6 @@ Automatically setup your Linux server with development tools and services!
 - Root or sudo access (for system setup)
 - Internet connection
 
-## 🚀 Setup Options
-
-You can set up your server in two ways:
-
-1. **Automated Setup** - Use GitHub Actions to set up remotely (Recommended)
-2. **Manual Setup** - Run scripts directly on your server via SSH
-
 ## ✨ What Gets Installed
 
 **System Setup:**
@@ -24,15 +17,19 @@ You can set up your server in two ways:
 - 💻 Installs Code Server
 - 🐘 Installs PostgreSQL
 - 🛠️ Installs essential development packages
+- 🔥 Configures UFW firewall
 
 **User Setup:**
 
 - ⚙️ Creates Code Server config file for the user
-- 📗 Installs uv Python package manager (Does not install Python)
-- 📗 Installs nvm Node package manager (Does not install Nodejs and npm themselves)
+- 📗 Installs uv Python package manager and attempts to install latest Python
+- 📗 Installs nvm Node.js version manager and attempts to install latest Node.js and npm
 - 📁 Creates a `repos` folder in the `/home/[USER]` directory
 - ⚙️ Configures Git global user name and email
 - 🔑 Generates and configures SSH key (id_ed25519)
+- 🔧 Attempts to enable code-server systemd service (may require manual action)
+
+**Note:** Some installations may require you to restart your shell or manually complete setup. Check the workflow output for specific instructions.
 
 ---
 
@@ -97,10 +94,23 @@ The workflow will:
 
 ## 📦 Workflow Outputs
 
-After the workflow finishes, review the run logs for:
+After the workflow finishes:
 
-- Code Server configuration (port and password)
-- Generated SSH public key ready for your Git host
+1. **Check the Summary tab** of the workflow run for:
+   - Code-server port and password
+   - Direct access URL to code-server
+   - Generated SSH public key (ready to add to your Git hosting service)
+   - Important post-setup notes
+
+2. **Review the detailed logs** for:
+   - Step-by-step execution details
+   - Any warnings or additional information
+
+**Next Steps:**
+
+- Add the displayed SSH public key to your Git hosting service (GitHub, GitLab, etc.)
+- Access code-server using the provided URL and password
+- If code-server service wasn't enabled automatically, run the command shown in the summary
 
 ---
 
