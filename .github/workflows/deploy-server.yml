@@ -1,0 +1,104 @@
+name: Deploy Server Setup
+
+on:
+  workflow_dispatch:
+    inputs:
+      setup_type:
+        description: 'Type of setup to run'
+        required: true
+        type: choice
+        options:
+          - system
+          - user
+          - both
+        default: 'both'
+      server_host:
+        description: 'Server IP address or hostname'
+        required: true
+        type: string
+      server_user:
+        description: 'SSH user (e.g., root for system setup, developer for user setup)'
+        required: true
+        type: string
+      server_port:
+        description: 'SSH port'
+        required: false
+        type: string
+        default: '22'
+      git_user_name:
+        description: 'Git user name (required for user setup)'
+        required: false
+        type: string
+      git_user_email:
+        description: 'Git user email (required for user setup)'
+        required: false
+        type: string
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SERVER_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -p ${{ inputs.server_port }} -H ${{ inputs.server_host }} >> ~/.ssh/known_hosts 2>/dev/null || true
+
+      - name: Test SSH Connection
+        run: |
+          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} -o StrictHostKeyChecking=accept-new ${{ inputs.server_user }}@${{ inputs.server_host }} "echo 'SSH connection successful'"
+
+      - name: Run System Setup
+        if: inputs.setup_type == 'system' || inputs.setup_type == 'both'
+        run: |
+          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} -o StrictHostKeyChecking=accept-new ${{ inputs.server_user }}@${{ inputs.server_host }} << 'ENDSSH'
+            export FOUNDRY_REPO_OWNER="${{ vars.FOUNDRY_REPO_OWNER }}"
+            export FOUNDRY_REPO_NAME="${{ vars.FOUNDRY_REPO_NAME }}"
+            export FOUNDRY_REPO_BRANCH="${{ vars.FOUNDRY_REPO_BRANCH }}"
+            bash -c "$(curl -sSL https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/system/setup.sh)"
+          ENDSSH
+
+      - name: Run User Setup
+        if: inputs.setup_type == 'user' || inputs.setup_type == 'both'
+        run: |
+          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} -o StrictHostKeyChecking=accept-new ${{ inputs.server_user }}@${{ inputs.server_host }} << 'ENDSSH'
+            export FOUNDRY_REPO_OWNER="${{ vars.FOUNDRY_REPO_OWNER }}"
+            export FOUNDRY_REPO_NAME="${{ vars.FOUNDRY_REPO_NAME }}"
+            export FOUNDRY_REPO_BRANCH="${{ vars.FOUNDRY_REPO_BRANCH }}"
+            export GIT_USER_NAME="${{ inputs.git_user_name }}"
+            export GIT_USER_EMAIL="${{ inputs.git_user_email }}"
+            export NVM_VERSION="${{ vars.NVM_VERSION }}"
+            export CODE_SERVER_PORT_START="${{ vars.CODE_SERVER_PORT_START }}"
+            export CODE_SERVER_PORT_END="${{ vars.CODE_SERVER_PORT_END }}"
+            bash -c "$(curl -sSL https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/user/setup.sh)"
+          ENDSSH
+
+      - name: Display Post-Setup Instructions
+        if: inputs.setup_type == 'user' || inputs.setup_type == 'both'
+        run: |
+          echo "✅ Setup completed successfully!"
+          echo ""
+          echo "📋 Next Steps:"
+          echo "1. If you ran user setup, retrieve the Code Server password and port:"
+          echo "   ssh -i ~/.ssh/deploy_key ${{ inputs.server_user }}@${{ inputs.server_host }} 'cat ~/.config/code-server/config.yaml'"
+          echo ""
+          echo "2. Retrieve the SSH public key to add to your Git hosting service:"
+          echo "   ssh -i ~/.ssh/deploy_key ${{ inputs.server_user }}@${{ inputs.server_host }} 'cat ~/.ssh/id_ed25519.pub'"
+          echo ""
+          echo "3. If you ran user setup, enable the code-server service (requires sudo):"
+          echo "   ssh -i ~/.ssh/deploy_key root@${{ inputs.server_host }} 'systemctl enable --now code-server@${{ inputs.server_user }}'"
+          echo ""
+          echo "4. Restart the session on the server:"
+          echo "   ssh -i ~/.ssh/deploy_key ${{ inputs.server_user }}@${{ inputs.server_host }} 'source ~/.bashrc && exec /bin/bash'"
+
+      - name: Cleanup SSH key
+        if: always()
+        run: |
+          rm -f ~/.ssh/deploy_key

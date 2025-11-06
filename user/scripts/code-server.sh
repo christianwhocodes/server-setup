@@ -31,11 +31,14 @@ find_available_port() {
 }
 
 # Configure port
-echo -e "${BLUE}Checking for available ports in range 8080-8100...${NC}"
-PORT=$(find_available_port 8080 8100)
+CODE_SERVER_PORT_START="${CODE_SERVER_PORT_START:-8080}"
+CODE_SERVER_PORT_END="${CODE_SERVER_PORT_END:-8100}"
+
+echo -e "${BLUE}Checking for available ports in range ${CODE_SERVER_PORT_START}-${CODE_SERVER_PORT_END}...${NC}"
+PORT=$(find_available_port $CODE_SERVER_PORT_START $CODE_SERVER_PORT_END)
 
 if [ $? -ne 0 ] || [ -z "$PORT" ]; then
-    echo -e "${RED}❌ No available ports found in range 8080-8100${NC}"
+    echo -e "${RED}❌ No available ports found in range ${CODE_SERVER_PORT_START}-${CODE_SERVER_PORT_END}${NC}"
     exit 1
 fi
 
