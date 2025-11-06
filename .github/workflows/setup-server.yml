@@ -17,7 +17,7 @@ on:
         required: true
         type: string
       server_user:
-        description: "SSH user (e.g., root for system setup, developer for user setup)"
+        description: "SSH user (use root/sudo user for system setup, use target user for user setup)"
         required: true
         type: string
       server_port:
@@ -44,6 +44,27 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Validate inputs
+        run: |
+          # Validate git inputs for user setup
+          if [[ "${{ inputs.setup_type }}" == "user" || "${{ inputs.setup_type }}" == "both" ]]; then
+            if [[ -z "${{ inputs.git_user_name }}" || -z "${{ inputs.git_user_email }}" ]]; then
+              echo "❌ Error: git_user_name and git_user_email are required for user setup"
+              exit 1
+            fi
+            
+            # Validate email format
+            if [[ ! "${{ inputs.git_user_email }}" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
+              echo "❌ Error: Invalid email format"
+              exit 1
+            fi
+          fi
+
+          # Warn if running both as non-root
+          if [[ "${{ inputs.setup_type }}" == "both" || "${{ inputs.setup_type }}" == "system" ]]; then
+            echo "⚠️  Note: System setup requires root or sudo privileges"
+          fi
+
       - name: Setup SSH key
         run: |
           mkdir -p ~/.ssh
@@ -51,77 +72,160 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -p ${{ inputs.server_port }} -H ${{ inputs.server_host }} >> ~/.ssh/known_hosts 2>/dev/null || true
 
-      - name: Test SSH Connection
+      - name: Test SSH connection
         run: |
-          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} -o StrictHostKeyChecking=accept-new ${{ inputs.server_user }}@${{ inputs.server_host }} "echo 'SSH connection successful'"
+          if ! ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new ${{ inputs.server_user }}@${{ inputs.server_host }} "echo 'SSH connection successful'"; then
+            echo "❌ Failed to establish SSH connection"
+            exit 1
+          fi
 
-      - name: Run System Setup
+      - name: Upload scripts to server
+        run: |
+          scp -i ~/.ssh/deploy_key -P ${{ inputs.server_port }} \
+            scripts/system.sh scripts/user.sh \
+            ${{ inputs.server_user }}@${{ inputs.server_host }}:/tmp/
+
+      - name: Run system setup
         if: inputs.setup_type == 'system' || inputs.setup_type == 'both'
         run: |
-          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} -o StrictHostKeyChecking=accept-new ${{ inputs.server_user }}@${{ inputs.server_host }} << 'ENDSSH'
-            export REPO_OWNER="${{ github.repository_owner }}"
-            export REPO_NAME="${{ github.event.repository.name }}"
-            export REPO_BRANCH="${{ github.sha }}"
-            bash -c "$(curl -sSL https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/system/setup.sh)"
+          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ inputs.server_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
+            set -e
+
+            echo "🚀 Starting system setup..."
+
+            # Check if we have sudo or are root
+            if [[ $EUID -eq 0 ]]; then
+              bash /tmp/system.sh
+            elif command -v sudo >/dev/null 2>&1; then
+              sudo bash /tmp/system.sh
+            else
+              echo "❌ Error: System setup requires root or sudo privileges"
+              exit 1
+            fi
+
+            echo "✅ System setup completed successfully"
           ENDSSH
 
-      - name: Run User Setup
+      - name: Run user setup
         if: inputs.setup_type == 'user' || inputs.setup_type == 'both'
         run: |
-          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} -o StrictHostKeyChecking=accept-new ${{ inputs.server_user }}@${{ inputs.server_host }} << 'ENDSSH'
-            export REPO_OWNER="${{ github.repository_owner }}"
-            export REPO_NAME="${{ github.event.repository.name }}"
-            export REPO_BRANCH="${{ github.sha }}"
+          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ inputs.server_user }}@${{ inputs.server_host }} bash <<ENDSSH
+            set -e
+
+            echo "🚀 Starting user setup for: ${{ inputs.server_user }}"
+
+            # Export environment variables
             export GIT_USER_NAME="${{ inputs.git_user_name }}"
             export GIT_USER_EMAIL="${{ inputs.git_user_email }}"
             export NVM_VERSION="${{ vars.NVM_VERSION || 'v0.40.3' }}"
             export CODE_SERVER_PORT_START="${{ vars.CODE_SERVER_PORT_START || '8080' }}"
             export CODE_SERVER_PORT_END="${{ vars.CODE_SERVER_PORT_END || '8100' }}"
-            bash -c "$(curl -sSL https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/user/setup.sh)"
+
+            # Run user setup
+            bash /tmp/user.sh
+
+            echo "✅ User setup completed successfully"
           ENDSSH
+
       - name: Enable code-server service
         if: inputs.setup_type == 'user' || inputs.setup_type == 'both'
         run: |
-          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} -o StrictHostKeyChecking=accept-new ${{ inputs.server_user }}@${{ inputs.server_host }} << 'ENDSSH'
-            TARGET_USER="${{ inputs.server_user }}"
-            if command -v sudo >/dev/null 2>&1; then
-              sudo -n systemctl enable --now code-server@"$TARGET_USER" || echo "Skipping code-server enable (sudo password required)"
+          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ inputs.server_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
+            set -e
+
+            echo "🔧 Enabling code-server service..."
+
+            # Try to enable code-server
+            if [[ $EUID -eq 0 ]]; then
+              # Running as root, enable for root
+              systemctl enable --now code-server@root 2>/dev/null || {
+                echo "⚠️  Could not enable code-server service"
+                echo "   Run manually: systemctl enable --now code-server@root"
+              }
+            elif command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
+              # Has passwordless sudo
+              sudo systemctl enable --now code-server@$USER 2>/dev/null || {
+                echo "⚠️  Could not enable code-server service"
+                echo "   Run manually: sudo systemctl enable --now code-server@$USER"
+              }
             else
-              systemctl enable --now code-server@"$TARGET_USER" || echo "Skipping code-server enable (insufficient permissions)"
+              echo "⚠️  Cannot enable code-server automatically (need root/sudo)"
+              echo "   Run manually: sudo systemctl enable --now code-server@$USER"
             fi
           ENDSSH
-      - name: Collect user setup outputs
+
+      - name: Retrieve setup credentials
         if: inputs.setup_type == 'user' || inputs.setup_type == 'both'
+        id: credentials
         run: |
-          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} -o StrictHostKeyChecking=accept-new ${{ inputs.server_user }}@${{ inputs.server_host }} << 'ENDSSH'
+          TEMP_DIR=$(mktemp -d)
+
+          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ inputs.server_user }}@${{ inputs.server_host }} bash <<'ENDSSH' > "$TEMP_DIR/output"
+            # Extract only port and password from config
             CONFIG_PATH="$HOME/.config/code-server/config.yaml"
             if [ -f "$CONFIG_PATH" ]; then
-              echo "----- code-server config -----"
-              cat "$CONFIG_PATH"
-              echo "------------------------------"
-            else
-              echo "code-server config not found at $CONFIG_PATH"
+              PORT=$(grep "bind-addr:" "$CONFIG_PATH" | awk -F: '{print $NF}' | tr -d ' ')
+              PASSWORD=$(grep "password:" "$CONFIG_PATH" | awk -F: '{print $2}' | tr -d ' ')
+              echo "CODE_SERVER_PORT=$PORT"
+              echo "CODE_SERVER_PASSWORD=$PASSWORD"
             fi
+
+            # Get SSH public key
             KEY_PATH="$HOME/.ssh/id_ed25519.pub"
             if [ -f "$KEY_PATH" ]; then
-              echo "----- SSH public key -----"
+              echo "SSH_PUBLIC_KEY<<EOF"
               cat "$KEY_PATH"
-              echo "--------------------------"
-            else
-              echo "SSH public key not found at $KEY_PATH"
+              echo "EOF"
             fi
           ENDSSH
-      - name: Display Post-Setup Instructions
+
+          # Parse output and set as masked outputs
+          while IFS= read -r line; do
+            if [[ "$line" =~ ^CODE_SERVER_PORT= ]]; then
+              PORT=${line#*=}
+              echo "port=$PORT" >> $GITHUB_OUTPUT
+            elif [[ "$line" =~ ^CODE_SERVER_PASSWORD= ]]; then
+              PASSWORD=${line#*=}
+              echo "::add-mask::$PASSWORD"
+              echo "password=$PASSWORD" >> $GITHUB_OUTPUT
+            elif [[ "$line" == "SSH_PUBLIC_KEY<<EOF" ]]; then
+              SSH_KEY=""
+              while IFS= read -r keyline; do
+                [[ "$keyline" == "EOF" ]] && break
+                SSH_KEY+="$keyline"
+              done
+              echo "ssh_key=$SSH_KEY" >> $GITHUB_OUTPUT
+            fi
+          done < "$TEMP_DIR/output"
+
+          rm -rf "$TEMP_DIR"
+
+      - name: Display setup summary
         if: inputs.setup_type == 'user' || inputs.setup_type == 'both'
         run: |
-          echo "✅ Setup completed successfully!"
-          echo ""
-          echo "📋 Review the workflow logs for code-server credentials and the generated SSH public key."
-          echo "⚙️ If code-server was not enabled automatically, ensure the target user has passwordless sudo access for systemctl."
-          echo ""
-          echo "🔑 Remember to secure your server and manage access to the SSH private key."
+          echo "## ✅ Setup Completed Successfully!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 👤 Configured User" >> $GITHUB_STEP_SUMMARY
+          echo "- **User:** ${{ inputs.server_user }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📋 Code Server Configuration" >> $GITHUB_STEP_SUMMARY
+          echo "- **Port:** ${{ steps.credentials.outputs.port }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Password:** \`${{ steps.credentials.outputs.password }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Access URL:** \`http://${{ inputs.server_host }}:${{ steps.credentials.outputs.port }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔑 SSH Public Key" >> $GITHUB_STEP_SUMMARY
+          echo "Add this to your Git hosting service (GitHub/GitLab/etc.):" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.credentials.outputs.ssh_key }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### ⚠️ Important Notes" >> $GITHUB_STEP_SUMMARY
+          echo "- Save the code-server password in a secure location" >> $GITHUB_STEP_SUMMARY
+          echo "- The SSH private key remains on the server at \`~${{ inputs.server_user }}/.ssh/id_ed25519\`" >> $GITHUB_STEP_SUMMARY
+          echo "- If code-server service wasn't enabled, run: \`sudo systemctl enable --now code-server@${{ inputs.server_user }}\`" >> $GITHUB_STEP_SUMMARY
 
-      - name: Cleanup SSH key
+      - name: Cleanup
         if: always()
         run: |
           rm -f ~/.ssh/deploy_key
+          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ inputs.server_user }}@${{ inputs.server_host }} "rm -f /tmp/system.sh /tmp/user.sh" 2>/dev/null || true
