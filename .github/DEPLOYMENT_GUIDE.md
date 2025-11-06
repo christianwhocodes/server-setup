@@ -11,19 +11,38 @@ This guide explains how to use the GitHub Actions workflow to automatically depl
 
 ## Quick Start
 
-### Step 1: Add SSH Key to GitHub Secrets
+### Step 1: Generate and Configure SSH Keys
 
-1. When deploying your server VM on your platform, (e.g. Amazon EC2, DigitalOcean Droplet etc), ensure that you have configured the default user (e.g. ubuntu or root) with SSH login access. If you don't have an SSH Key pair, create it as shown below, and set the public key when you are deploying your VM instance on your platform:
+1. **Generate an SSH key pair for GitHub Actions** (if you don't have one):
 
    ```bash
-   ssh-keygen -t ed25519 -f ~/.ssh/foundry_setup
+   ssh-keygen -t ed25519 -f ~/.ssh/foundry_deploy -C "github-actions-deploy"
    ```
 
-2. Add private key to GitHub:
+   **Important Security Notes:**
+   - Consider using a passphrase for the private key (you'll need to handle this in your workflow or use a dedicated deployment key without a passphrase)
+   - Store the private key securely
+   - Use different keys for different servers/environments
+   - Regularly rotate your deployment keys
+   - Never commit private keys to version control
+
+2. **Add the public key to your server's sudo user:**
+
+   When deploying your server VM (e.g., on Amazon EC2, DigitalOcean, etc.), ensure the default user (like `ubuntu` or `root`) is configured with SSH access. Add your public key:
+
+   ```bash
+   # Copy public key to your server
+   ssh-copy-id -i ~/.ssh/foundry_deploy.pub ubuntu@your-server-ip
+   
+   # Or manually:
+   cat ~/.ssh/foundry_deploy.pub | ssh ubuntu@your-server-ip "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"
+   ```
+
+3. **Add private key to GitHub:**
    - Go to: **Settings** → **Secrets and variables** → **Actions** → **Secrets**
    - Click **New repository secret**
    - Name: `SERVER_SSH_KEY`
-   - Value: Paste content of `~/.ssh/foundry_setup` (private key)
+   - Value: Paste the **entire content** of `~/.ssh/foundry_deploy` (the private key file)
 
 ### Step 2: Configure SUDO_ACCESS_USER
 
@@ -33,7 +52,10 @@ Add the username of your sudo user:
 - Name: `SUDO_ACCESS_USER`
 - Value: `ubuntu` (or `root`, or your sudo username)
 
-**Note:** This user (e.g. ubuntu or root) must have passwordless sudo access and SSH access with the `SERVER_SSH_KEY`.
+**Important:** This user must:
+- Already exist on the server
+- Have passwordless sudo access
+- Have SSH access with the `SERVER_SSH_KEY` you configured in Step 1
 
 ### Step 3: (Optional) Configure Repository Variables
 
@@ -53,7 +75,7 @@ See [VARIABLES.md](VARIABLES.md) for available variables like `NVM_VERSION`, `CO
    **User creation options (if user doesn't exist):**
    - **Create user if missing**: Check to auto-create the user
    - **Make user sudo**: Check to give the new user passwordless sudo
-   - **SSH public key**: Paste SSH public key to allow SSH login for new user
+   - **SSH public key**: Paste SSH public key to allow SSH login for new user (this is different from `SERVER_SSH_KEY`)
 
    **System setup modules** (requires SUDO_ACCESS_USER):
    - **Setup OpenSSH and UFW**: Configure firewall and SSH
@@ -91,6 +113,64 @@ After the workflow completes:
   - Important post-setup notes
 - **Review Run Logs**: Check the detailed logs for any warnings or additional information
 
+## Understanding User Management
+
+This is a common source of confusion, so let's clarify:
+
+### Two Types of Users
+
+1. **SUDO_ACCESS_USER** (GitHub Variable/Secret)
+   - Purpose: Execute system-level operations
+   - Requirements:
+     - Must already exist on the server
+     - Must have passwordless sudo access
+     - Must have SSH access with `SERVER_SSH_KEY`
+   - Examples: `ubuntu`, `root`, `admin`
+   - Used for: Installing packages, configuring Nginx, PostgreSQL, etc.
+
+2. **target_user** (Workflow Input)
+   - Purpose: The user you want to configure with dev tools
+   - Can be:
+     - An existing user (like `SUDO_ACCESS_USER`)
+     - A new user to be created
+   - Used for: Code-server config, nvm, uv, Git setup, etc.
+
+### SSH Key Confusion Explained
+
+- **SERVER_SSH_KEY** (GitHub Secret):
+  - Used by GitHub Actions to connect to the server
+  - Private key stored in GitHub Secrets
+  - Public key must be in `SUDO_ACCESS_USER`'s `~/.ssh/authorized_keys`
+  - Purpose: Automation access
+
+- **ssh_public_key** (Workflow Input):
+  - Only used when creating a new `target_user`
+  - Your personal/team SSH public key
+  - Allows human users to SSH into the new user account
+  - Purpose: Human access to the new user
+
+### Common Scenarios
+
+**Scenario A: Setup everything as existing ubuntu user**
+- SUDO_ACCESS_USER: `ubuntu`
+- target_user: `ubuntu`
+- Create user: ❌ No
+- Result: Ubuntu user gets all tools installed
+
+**Scenario B: Create new developer user**
+- SUDO_ACCESS_USER: `ubuntu`
+- target_user: `developer`
+- Create user: ✅ Yes
+- ssh_public_key: `ssh-ed25519 AAAA... developer@laptop`
+- Result: New `developer` user created, ubuntu user still used for system operations
+
+**Scenario C: User-only setup on existing server**
+- SUDO_ACCESS_USER: (not needed)
+- target_user: `developer`
+- System modules: ❌ None
+- User modules: ✅ Selected
+- Result: Only user-level tools configured
+
 ## Deployment Scenarios
 
 ### Scenario 1: Full Server Setup for New User
@@ -102,7 +182,7 @@ Server host: 192.168.1.100
 Target user: developer
 Create user if missing: ✓
 Make user sudo: ✓
-SSH public key: <paste your public key>
+SSH public key: <paste your personal public key>
 
 # System modules (all checked)
 Setup OpenSSH and UFW: ✓
@@ -182,13 +262,6 @@ Setup nvm: ✓  # Adds nvm if not already installed
 
 ## Understanding the Workflow
 
-### User Management
-
-- **target_user**: The user to configure. If the user doesn't exist and `create_user_if_missing` is true, it will be created.
-- **create_user_if_missing**: Automatically create the user if they don't exist
-- **make_user_sudo**: When creating a new user, add them to sudo group with passwordless sudo
-- **ssh_public_key**: When creating a new user, add this SSH public key to their authorized_keys
-
 ### Module Types
 
 **System Modules**: Require `SUDO_ACCESS_USER` to be configured. These install system-wide tools and services:
@@ -218,10 +291,11 @@ All modules check if their components are already installed/configured before ma
 **Solutions:**
 
 1. Verify server is reachable: `ping your-server-ip`
-2. Check SSH key is correct in GitHub Secrets
+2. Check SSH key is correct in GitHub Secrets (entire private key including headers)
 3. Verify public key is in the SUDO_ACCESS_USER's `~/.ssh/authorized_keys`
 4. Check firewall allows SSH: `sudo ufw status`
 5. Verify SSH port (default is 22)
+6. Test manually: `ssh -i ~/.ssh/foundry_deploy ubuntu@your-server-ip`
 
 ### SUDO_ACCESS_USER Not Set
 
@@ -242,6 +316,7 @@ All modules check if their components are already installed/configured before ma
 1. Ensure `SUDO_ACCESS_USER` has permissions to create users
 2. Check if user already exists: `id username`
 3. Verify `create_user_if_missing` is set to true
+4. Check logs for specific error messages
 
 ### Permission Denied
 
@@ -251,7 +326,8 @@ All modules check if their components are already installed/configured before ma
 
 1. For system modules: verify `SUDO_ACCESS_USER` has passwordless sudo
 2. For user modules: verify target user exists and is accessible
-3. Check SSH key has correct permissions
+3. Check SSH key has correct permissions (600 for private key)
+4. Verify the public key is in the correct user's authorized_keys
 
 ### Module Already Installed
 
@@ -261,7 +337,18 @@ All modules check if their components are already installed/configured before ma
 
 1. Modules are idempotent - they skip if already installed
 2. To force reconfiguration, manually uninstall the component first
-3. Or modify the script to force reinstallation (not recommended)
+3. Check the specific module logs for what was detected
+
+### Credential Retrieval Failed
+
+**Problem:** Workflow fails to retrieve code-server password or SSH key
+
+**Solutions:**
+
+1. Check that the user setup step completed successfully
+2. Verify config files were created: `ls -la ~/.config/code-server/`
+3. Check SSH key was generated: `ls -la ~/.ssh/id_ed25519*`
+4. Review the "Retrieve setup credentials" step logs
 
 ## Advanced Usage
 
@@ -291,13 +378,39 @@ Re-run workflow with specific modules to update:
 
 ## Security Best Practices
 
-1. **SSH Keys**: Use dedicated keys for deployments, not your personal keys
-2. **Secrets Management**: Use GitHub Secrets for sensitive data
-3. **SUDO_ACCESS_USER**: Consider using a dedicated deployment user
-4. **Limited Access**: Create deployment users with minimal required permissions
-5. **Audit Logs**: Review workflow runs regularly
-6. **Branch Protection**: Protect main branch to prevent unauthorized workflow changes
-7. **Key Rotation**: Regularly rotate SSH keys and update secrets
+1. **SSH Keys**: 
+   - Use dedicated keys for deployments, not your personal keys
+   - Consider using passphrase-protected keys
+   - Regularly rotate deployment keys
+   - Use different keys for different environments
+
+2. **Secrets Management**: 
+   - Use GitHub Secrets for sensitive data
+   - Never commit private keys or passwords to git
+   - Use environment-specific secrets when possible
+
+3. **SUDO_ACCESS_USER**: 
+   - Consider using a dedicated deployment user
+   - Limit sudo permissions where possible
+   - Regularly audit sudo access
+
+4. **Limited Access**: 
+   - Create deployment users with minimal required permissions
+   - Use principle of least privilege
+
+5. **Audit Logs**: 
+   - Review workflow runs regularly
+   - Monitor failed authentication attempts on servers
+   - Keep server logs for security review
+
+6. **Branch Protection**: 
+   - Protect main branch to prevent unauthorized workflow changes
+   - Require pull request reviews for workflow modifications
+
+7. **Key Rotation**: 
+   - Regularly rotate SSH keys and update secrets
+   - Remove old keys from authorized_keys
+   - Update GitHub Secrets after rotation
 
 ## Getting Help
 
