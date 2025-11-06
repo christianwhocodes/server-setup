@@ -4,33 +4,33 @@ on:
   workflow_dispatch:
     inputs:
       setup_type:
-        description: 'Type of setup to run'
+        description: "Type of setup to run"
         required: true
         type: choice
         options:
           - system
           - user
           - both
-        default: 'both'
+        default: "both"
       server_host:
-        description: 'Server IP address or hostname'
+        description: "Server IP address or hostname"
         required: true
         type: string
       server_user:
-        description: 'SSH user (e.g., root for system setup, developer for user setup)'
+        description: "SSH user (e.g., root for system setup, developer for user setup)"
         required: true
         type: string
       server_port:
-        description: 'SSH port'
+        description: "SSH port"
         required: false
         type: string
-        default: '22'
+        default: "22"
       git_user_name:
-        description: 'Git user name (required for user setup)'
+        description: "Git user name (required for user setup)"
         required: false
         type: string
       git_user_email:
-        description: 'Git user email (required for user setup)'
+        description: "Git user email (required for user setup)"
         required: false
         type: string
 
@@ -39,7 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -59,9 +59,9 @@ jobs:
         if: inputs.setup_type == 'system' || inputs.setup_type == 'both'
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} -o StrictHostKeyChecking=accept-new ${{ inputs.server_user }}@${{ inputs.server_host }} << 'ENDSSH'
-            export FOUNDRY_REPO_OWNER="${{ vars.FOUNDRY_REPO_OWNER }}"
-            export FOUNDRY_REPO_NAME="${{ vars.FOUNDRY_REPO_NAME }}"
-            export FOUNDRY_REPO_BRANCH="${{ vars.FOUNDRY_REPO_BRANCH }}"
+            export REPO_OWNER="${{ vars.REPO_OWNER }}"
+            export REPO_NAME="${{ vars.REPO_NAME }}"
+            export REPO_BRANCH="${{ vars.REPO_BRANCH }}"
             bash -c "$(curl -sSL https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/system/setup.sh)"
           ENDSSH
 
@@ -69,9 +69,9 @@ jobs:
         if: inputs.setup_type == 'user' || inputs.setup_type == 'both'
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} -o StrictHostKeyChecking=accept-new ${{ inputs.server_user }}@${{ inputs.server_host }} << 'ENDSSH'
-            export FOUNDRY_REPO_OWNER="${{ vars.FOUNDRY_REPO_OWNER }}"
-            export FOUNDRY_REPO_NAME="${{ vars.FOUNDRY_REPO_NAME }}"
-            export FOUNDRY_REPO_BRANCH="${{ vars.FOUNDRY_REPO_BRANCH }}"
+            export REPO_OWNER="${{ vars.REPO_OWNER }}"
+            export REPO_NAME="${{ vars.REPO_NAME }}"
+            export REPO_BRANCH="${{ vars.REPO_BRANCH }}"
             export GIT_USER_NAME="${{ inputs.git_user_name }}"
             export GIT_USER_EMAIL="${{ inputs.git_user_email }}"
             export NVM_VERSION="${{ vars.NVM_VERSION }}"

@@ -7,7 +7,7 @@ This guide explains how to use the GitHub Actions workflow to automatically depl
 1. **Ubuntu Server**: Fresh Ubuntu 24.04 server with SSH access
 2. **SSH Key Pair**: For connecting to your server
 3. **GitHub Repository**: This repository (forked or original)
-4. **Server Prepared**: 
+4. **Server Prepared**:
    - OpenSSH installed and running
    - Firewall configured to allow SSH
    - For system setup: root access or sudo user
@@ -18,11 +18,13 @@ This guide explains how to use the GitHub Actions workflow to automatically depl
 ### Step 1: Add SSH Key to GitHub Secrets
 
 1. Generate an SSH key (if needed):
+
    ```bash
    ssh-keygen -t ed25519 -f ~/.ssh/foundry_deploy
    ```
 
 2. Copy public key to server:
+
    ```bash
    ssh-copy-id -i ~/.ssh/foundry_deploy.pub root@your-server-ip
    ```
@@ -45,12 +47,14 @@ See [VARIABLES.md](VARIABLES.md) for available variables. Only configure if you 
 4. Fill in the form:
 
    **For System Setup:**
+
    - Setup type: `system` or `both`
    - Server host: `your-server-ip`
    - Server user: `root`
    - Server port: `22` (or your custom SSH port)
 
    **For User Setup:**
+
    - Setup type: `user` or `both`
    - Server host: `your-server-ip`
    - Server user: `developer` (or your username)
@@ -71,16 +75,19 @@ See [VARIABLES.md](VARIABLES.md) for available variables. Only configure if you 
 After user setup, you need to manually:
 
 1. **Enable code-server** (requires sudo):
+
    ```bash
    ssh root@your-server 'systemctl enable --now code-server@developer'
    ```
 
 2. **Get code-server credentials**:
+
    ```bash
    ssh developer@your-server 'cat ~/.config/code-server/config.yaml'
    ```
 
 3. **Get SSH public key** (for GitHub/GitLab):
+
    ```bash
    ssh developer@your-server 'cat ~/.ssh/id_ed25519.pub'
    ```
@@ -139,6 +146,7 @@ Run the workflow multiple times with different server IPs to deploy to multiple 
 **Problem:** Workflow fails at "Test SSH Connection" step
 
 **Solutions:**
+
 1. Verify server is reachable: `ping your-server-ip`
 2. Check SSH key is correct in GitHub Secrets
 3. Verify public key is in server's `~/.ssh/authorized_keys`
@@ -150,6 +158,7 @@ Run the workflow multiple times with different server IPs to deploy to multiple 
 **Problem:** Scripts fail with permission errors
 
 **Solutions:**
+
 1. For system setup: use `root` user or user with sudo privileges
 2. Verify SSH key has correct permissions
 3. Check user exists on server: `id username`
@@ -159,6 +168,7 @@ Run the workflow multiple times with different server IPs to deploy to multiple 
 **Problem:** User setup fails asking for git configuration
 
 **Solutions:**
+
 1. Ensure `git_user_name` and `git_user_email` are provided in workflow inputs
 2. These are required for user setup
 
@@ -167,6 +177,7 @@ Run the workflow multiple times with different server IPs to deploy to multiple 
 **Problem:** Code-server setup fails finding available port
 
 **Solutions:**
+
 1. Configure custom port range with repository variables:
    - `CODE_SERVER_PORT_START`
    - `CODE_SERVER_PORT_END`
@@ -177,10 +188,11 @@ Run the workflow multiple times with different server IPs to deploy to multiple 
 **Problem:** Cannot download scripts from GitHub
 
 **Solutions:**
+
 1. Check repository variables are correct:
-   - `FOUNDRY_REPO_OWNER`
-   - `FOUNDRY_REPO_NAME`
-   - `FOUNDRY_REPO_BRANCH`
+   - `REPO_OWNER`
+   - `REPO_NAME`
+   - `REPO_BRANCH`
 2. Verify server has internet access: `curl -I https://github.com`
 3. Check GitHub is accessible from your server
 
@@ -190,7 +202,7 @@ Run the workflow multiple times with different server IPs to deploy to multiple 
 
 To test changes on a feature branch:
 
-1. Set repository variable `FOUNDRY_REPO_BRANCH` to your branch name
+1. Set repository variable `REPO_BRANCH` to your branch name
 2. Or, modify the workflow to use a different branch temporarily
 
 ### Parallel Deployments
@@ -210,7 +222,7 @@ on:
   workflow_dispatch:
     # ... existing inputs
   schedule:
-    - cron: '0 2 * * 0'  # Run every Sunday at 2 AM UTC
+    - cron: "0 2 * * 0" # Run every Sunday at 2 AM UTC
 ```
 
 ## Security Best Practices
