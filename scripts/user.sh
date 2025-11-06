@@ -10,6 +10,7 @@ export DEBIAN_FRONTEND=noninteractive
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 RED='\033[0;31m'
+YELLOW='\033[1;33m'
 NC='\033[0m'
 
 validate_email() {
@@ -70,7 +71,7 @@ code_server_setup() {
     if [ -n "$EXISTING_PORT" ] && ! is_port_in_use "$EXISTING_PORT"; then
       echo -e "${GREEN}✅ Using existing code-server config on port $EXISTING_PORT${NC}"
       CODE_SERVER_PORT="$EXISTING_PORT"
-      CODE_SERVER_PASSWORD=$(grep "password:" "$HOME/.config/code-server/config.yaml" | awk -F: '{print $2}' | tr -d ' ')
+      # Don't extract password here to avoid exposing it in logs
       return 0
     fi
   fi
@@ -95,6 +96,8 @@ password: $CODE_SERVER_PASSWORD
 cert: false
 EOF
   chmod 600 "$HOME/.config/code-server/config.yaml"
+  
+  echo -e "${GREEN}✅ code-server configuration created (password saved securely)${NC}"
 }
 
 uv_setup() {
@@ -147,22 +150,35 @@ nvm_setup() {
     [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
   fi
 
-  if command -v nvm >/dev/null 2>&1; then
-    # Check if Node.js is already installed
-    if nvm ls | grep -q "node"; then
-      echo -e "${GREEN}✅ Node.js already installed with nvm${NC}"
-    else
-      if ! nvm install node; then
-        echo -e "${BLUE}ℹ️  You can install Node.js manually after restarting your shell with: nvm install node${NC}"
+  # Check if nvm is available as a shell function
+  if [ -s "$NVM_DIR/nvm.sh" ]; then
+    # Source nvm to ensure it's loaded
+    \. "$NVM_DIR/nvm.sh"
+    
+    # Check if nvm function exists
+    if declare -f nvm >/dev/null 2>&1; then
+      # Check if Node.js is already installed
+      if nvm ls 2>/dev/null | grep -q "node"; then
+        echo -e "${GREEN}✅ Node.js already installed with nvm${NC}"
       else
-        echo -e "${GREEN}✅ Node.js installed successfully with nvm${NC}"
+        echo -e "${YELLOW}Installing Node.js with nvm...${NC}"
+        if ! nvm install node; then
+          echo -e "${YELLOW}⚠️  Failed to install Node.js in this session${NC}"
+          echo -e "${BLUE}ℹ️  You can install Node.js manually after restarting your shell with: nvm install node${NC}"
+        else
+          echo -e "${GREEN}✅ Node.js installed successfully with nvm${NC}"
 
-        if npm install -g npm@latest; then
-          echo -e "${GREEN}✅ npm updated successfully${NC}"
+          if npm install -g npm@latest; then
+            echo -e "${GREEN}✅ npm updated successfully${NC}"
+          fi
         fi
       fi
+    else
+      echo -e "${YELLOW}⚠️  nvm function not available in current session${NC}"
+      echo -e "${BLUE}ℹ️  You can install Node.js manually after restarting your shell with: nvm install node${NC}"
     fi
   else
+    echo -e "${YELLOW}⚠️  nvm.sh not found${NC}"
     echo -e "${BLUE}ℹ️  You can install Node.js manually after restarting your shell with: nvm install node${NC}"
   fi
 }
@@ -196,6 +212,8 @@ git_ssh_setup() {
   # Configure git (safe to run multiple times)
   git config --global user.name "$GIT_USER_NAME"
   git config --global user.email "$GIT_USER_EMAIL"
+  echo -e "${GREEN}✅ Git configured with name: $GIT_USER_NAME${NC}"
+  echo -e "${GREEN}✅ Git configured with email: $GIT_USER_EMAIL${NC}"
 
   mkdir -p ~/.ssh
   chmod 700 ~/.ssh
@@ -204,6 +222,7 @@ git_ssh_setup() {
   if [ -f ~/.ssh/id_ed25519 ]; then
     echo -e "${GREEN}✅ SSH key already exists${NC}"
   else
+    echo -e "${YELLOW}Generating new SSH key...${NC}"
     ssh-keygen -t ed25519 -C "$GIT_USER_EMAIL" -N "" -f ~/.ssh/id_ed25519
     chmod 600 ~/.ssh/id_ed25519
     chmod 644 ~/.ssh/id_ed25519.pub
@@ -214,5 +233,6 @@ git_ssh_setup() {
   if [ ! -f ~/.ssh/config ]; then
     touch ~/.ssh/config
     chmod 600 ~/.ssh/config
+    echo -e "${GREEN}✅ Created SSH config file${NC}"
   fi
 }
