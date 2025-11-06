@@ -1,6 +1,9 @@
 #!/bin/bash
 # This script contains modular user setup functions
 # Functions are meant to be sourced and called individually for idempotent operations
+# The calling context should use 'set -e' to ensure errors are properly handled
+
+set -e
 
 export DEBIAN_FRONTEND=noninteractive
 
