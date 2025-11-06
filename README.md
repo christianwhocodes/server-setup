@@ -2,94 +2,130 @@
 
 Automatically setup your Linux server with development tools and services using granular, idempotent GitHub Actions workflows!
 
-## 📋 Requirements
+## 🚀 Quick Start
 
-- Fresh Linux server (tested on Ubuntu 24.04)
-- A user with passwordless sudo access (for system-level operations)
-- Internet connection
+1. **Fork this repository** - You'll need your own copy to store secrets
+2. **Add your SSH key** to GitHub Secrets as `SERVER_SSH_KEY`
+3. **Set your sudo user** in GitHub Variables as `SUDO_ACCESS_USER`
+4. **Run the workflow** - Actions → Setup Server → Choose your modules!
 
-## ✨ What Gets Installed
+## ✨ Available Modules
 
-**System Setup Modules** (requires sudo access):
+**System Modules** (requires sudo):
+- 🔥 **OpenSSH & UFW** - Firewall and SSH configuration
+- 🛠️ **Development Packages** - Essential build tools and libraries
+- 🌐 **Nginx** - Web server and reverse proxy
+- 🔒 **Certbot** - SSL certificate management
+- 💻 **Code Server** - VS Code in the browser (system-wide)
+- 🐘 **PostgreSQL** - Relational database server
 
-- 🔥 **OpenSSH & UFW**: Configures firewall and SSH access
-- 🛠️ **Development Packages**: Essential build tools and libraries
-- 🌐 **Nginx**: Web server and reverse proxy
-- 🔒 **Certbot**: SSL certificate management
-- 💻 **Code Server**: VS Code in the browser (system-wide installation)
-- 🐘 **PostgreSQL**: Relational database server
-
-**User Setup Modules** (per-user configuration):
-
-- ⚙️ **Code Server Config**: User-specific code-server configuration
-- 📗 **uv**: Python package manager with automatic Python installation
-- 📗 **nvm**: Node.js version manager with automatic Node.js installation
-- 📁 **Repos Directory**: Creates `~/repos` folder for projects
-- ⚙️ **Git Configuration**: Sets up global Git user name and email
-- 🔑 **SSH Keys**: Generates ed25519 SSH key pair for Git operations
+**User Modules** (per-user):
+- ⚙️ **Code Server Config** - User-specific code-server setup
+- 📗 **uv** - Python package manager with automatic Python installation
+- 📗 **nvm** - Node.js version manager with automatic Node.js installation
+- 📁 **Repos Directory** - Creates `~/repos` folder for projects
+- ⚙️ **Git Configuration** - Sets up global Git user name and email
+- 🔑 **SSH Keys** - Generates ed25519 SSH key pair for Git operations
 
 **Key Features:**
+- ✅ Granular control - choose exactly which modules to install
+- ✅ Idempotent - safe to run multiple times without breaking existing setups
+- ✅ User management - automatically create users with optional sudo access
+- ✅ No manual SSH or script copying required
 
-- ✅ **Granular Control**: Choose exactly which modules to install
-- ✅ **Idempotent**: Safe to run multiple times without breaking existing setups
-- ✅ **User Management**: Automatically create users with optional sudo access
-- ✅ **Flexible**: Mix system-wide and per-user configurations
+## 📋 Prerequisites
+
+- Fresh Linux server (tested on Ubuntu 24.04)
+- A user with passwordless sudo access (e.g., `ubuntu`, `root`)
+- Internet connection
+- Fork of this repository
+
+## 🔧 Setup Instructions
+
+### 1. Configure GitHub Secrets
+
+Navigate to your repository's **Settings** → **Secrets and variables** → **Actions**:
+
+**Required Secret:**
+
+| Secret Name | Description | Value |
+|-------------|-------------|-------|
+| `SERVER_SSH_KEY` | SSH private key for server access | Entire content of your private key file |
+
+**Note:** The corresponding public key must be in your sudo user's `~/.ssh/authorized_keys` on the server.
+
+### 2. Configure GitHub Variables
+
+In the same section, switch to the **Variables** tab:
+
+**Required Variable:**
+
+| Variable Name | Description | Example |
+|---------------|-------------|---------|
+| `SUDO_ACCESS_USER` | User with passwordless sudo | `ubuntu` or `root` |
+
+**Optional Variables:**
+
+| Variable Name | Description | Default |
+|---------------|-------------|---------|
+| `NVM_VERSION` | Node Version Manager version | `v0.40.3` |
+| `CODE_SERVER_PORT_START` | Code server port range start | `8080` |
+| `CODE_SERVER_PORT_END` | Code server port range end | `8100` |
+
+### 3. Choose Your Setup Scenario
+
+Pick the workflow configuration that matches your needs:
+
+## 💡 Common Use Cases
+
+### 🎯 Full Development Server
+
+Create a new user with complete development environment:
+
+**System Modules:** ✅ All (OpenSSH/UFW, Packages, Nginx, Certbot, Code-server, PostgreSQL)  
+**User Modules:** ✅ All (Code-server config, uv, nvm, repos directory, Git/SSH)  
+**User Creation:** Create user, make sudo, add SSH key
+
+**Perfect for:** Setting up a brand new development server from scratch
 
 ---
 
-## 🤖 Automated Setup with GitHub Actions
+### 👤 Add User to Existing Server
 
-Deploy and configure your server automatically using GitHub Actions - no manual SSH required!
+Just user-level tools without touching system services:
 
-### 🎯 Benefits
+**System Modules:** ❌ None  
+**User Modules:** ✅ All (Code-server config, uv, nvm, repos directory, Git/SSH)  
+**User Creation:** Use existing user or create new non-sudo user
 
-- ✅ Granular module selection - install only what you need
-- ✅ Automatic user creation with optional sudo access
-- ✅ Idempotent operations - safe to rerun
-- ✅ No manual copy-pasting of scripts
-- ✅ Consistent deployments across multiple servers
-- ✅ Version-controlled configuration
-- ✅ Easy to customize with repository variables
-- ✅ Audit trail of all deployments
+**Perfect for:** Adding a new developer to an already configured server
 
-### 📚 Prerequisites
+---
 
-1. **Fork this repository**: You'll need your own copy to store SSH keys as secrets
-2. **Server SSH Key**: Generate an SSH key pair for server access
-3. **Sudo User**: A user with passwordless sudo access on the server (e.g., `ubuntu`, `root`)
-4. **GitHub Secrets & Variables**: Configure required secrets and variables
+### 🖥️ System Services Only
 
-### 🔧 Setup Instructions
+Install system-wide services without user configuration:
 
-#### 1. Add SSH Key to GitHub Secrets
+**System Modules:** ✅ All or selected (OpenSSH/UFW, Packages, Nginx, Certbot, PostgreSQL)  
+**User Modules:** ❌ None  
+**User Creation:** Not needed
 
-Navigate to your repository's **Settings** → **Secrets and variables** → **Actions** → **Secrets** → **New repository secret**:
+**Perfect for:** Setting up a production server or shared infrastructure
 
-- **Name**: `SERVER_SSH_KEY`
-- **Value**: Your SSH private key content (the entire content of your private key file)
+---
 
-Make sure the corresponding public key is in the sudo user's `~/.ssh/authorized_keys` on the server.
+### 🔧 Add Single Module
 
-#### 2. Configure SUDO_ACCESS_USER
+Install one new tool to an existing setup (idempotent):
 
-Navigate to **Settings** → **Secrets and variables** → **Actions** → **Variables** tab → **New repository variable**:
+**Any Modules:** ✅ Check only what you want to add  
+**Existing setups:** Won't be affected - safe to rerun
 
-- **Name**: `SUDO_ACCESS_USER`
-- **Value**: Username with passwordless sudo (e.g., `ubuntu`, `root`)
+**Perfect for:** Adding PostgreSQL to a server that already has Nginx, or adding nvm to a user who already has uv
 
-**Note:** This user is used for system-level operations. Required when using any system setup modules.
+---
 
-#### 3. Configure Repository Variables (Optional)
-
-Navigate to **Settings** → **Secrets and variables** → **Actions** → **Variables** tab → **New repository variable**:
-
-| Variable Name            | Description                  | Default Value |
-| ------------------------ | ---------------------------- | ------------- |
-| `NVM_VERSION`            | Node Version Manager version | `v0.40.3`     |
-| `CODE_SERVER_PORT_START` | Code server port range start | `8080`        |
-| `CODE_SERVER_PORT_END`   | Code server port range end   | `8100`        |
-
-#### 4. Run the Workflow
+### 4. Run the Workflow
 
 1. Go to **Actions** → **Setup Server**
 2. Click **Run workflow**
@@ -98,85 +134,39 @@ Navigate to **Settings** → **Secrets and variables** → **Actions** → **Var
    - **Server port**: SSH port (default: `22`)
    - **Target user**: User to setup (will be created if doesn't exist)
    
-4. Configure user creation options (if user doesn't exist):
+4. Configure user creation options (if needed):
    - **Create user if missing**: Auto-create the user
    - **Make user sudo**: Give new user passwordless sudo access
    - **SSH public key**: Add SSH key for passwordless login
 
-5. Select which modules to install:
-   - **System modules**: Require `SUDO_ACCESS_USER` to be configured
-   - **User modules**: Run as target user, no sudo required
-   - **Git configuration**: Provide name and email if setting up Git
+5. Select your modules based on the scenario above
 
-6. Click **Run workflow**
+6. Provide Git configuration if setting up Git/SSH modules
 
-The workflow will:
+7. Click **Run workflow** and watch the magic happen!
 
-- Connect to your server via SSH
-- Create the target user if needed
-- Run apt-get update (if any system modules selected)
-- Execute selected system setup modules with sudo
-- Execute selected user setup modules as the target user
-- Display post-setup instructions and credentials
+## 📦 After Deployment
 
-## 📦 Workflow Outputs
+### Check Workflow Outputs
 
-After the workflow finishes:
+After the workflow completes, check the **Summary** tab for:
 
-1. **Check the Summary tab** of the workflow run for:
-   - Code-server port and password (if configured)
-   - Direct access URL to code-server
-   - Generated SSH public key (if Git/SSH configured)
-   - Important post-setup notes
+- 🔐 Code-server access URL and password
+- 🔑 Generated SSH public key (add this to GitHub/GitLab)
+- 📝 Important post-setup notes and next steps
+- ⚠️ Any warnings or manual steps required
 
-2. **Review the detailed logs** for:
-   - Step-by-step execution details
-   - Any warnings or additional information
+### Next Steps
 
-**Next Steps:**
-
-- Add the displayed SSH public key to your Git hosting service (GitHub, GitLab, etc.)
-- Access code-server using the provided URL and password
-- If code-server service wasn't enabled automatically, run the command shown in the summary
-
-## 🚀 Common Workflows
-
-### Full Development Server Setup
-
-Create a new user with full development environment:
-
-1. Set system modules: OpenSSH/UFW, Packages, Nginx, Certbot, Code-server (system), PostgreSQL
-2. Set user modules: Code-server (user), uv, nvm, repos directory, Git/SSH
-3. Configure: Create user, make sudo, add SSH key
-
-### Add User to Existing Server
-
-Just user-level tools for an existing user:
-
-1. Leave all system modules unchecked
-2. Set user modules: Code-server (user), uv, nvm, repos directory, Git/SSH
-3. Configure: Use existing user
-
-### System-Only Setup
-
-Install system services without user configuration:
-
-1. Set system modules: OpenSSH/UFW, Packages, Nginx, Certbot, PostgreSQL
-2. Leave all user modules unchecked
-
-### Add Single Module
-
-Install one new tool to existing setup (idempotent):
-
-1. Check only the module you want to add
-2. Run workflow - existing installations won't be affected
-
----
+1. **Add SSH key to Git hosting** - Copy the displayed public key to GitHub/GitLab/etc.
+2. **Access code-server** - Use the provided URL and password
+3. **Enable code-server service** - If not auto-enabled, run the command shown in summary
+4. **Start developing!** - Your server is ready to use
 
 ## 📖 Documentation
 
 - [DEPLOYMENT_GUIDE.md](.github/DEPLOYMENT_GUIDE.md) - Detailed deployment instructions and scenarios
-- [VARIABLES.md](.github/VARIABLES.md) - Configuration options and secrets
+- [VARIABLES.md](.github/VARIABLES.md) - Configuration options and secrets reference
 
 ## 📝 License
 
