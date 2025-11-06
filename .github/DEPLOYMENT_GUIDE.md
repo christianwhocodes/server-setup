@@ -68,32 +68,11 @@ See [VARIABLES.md](VARIABLES.md) for available variables.
 - Check for any errors in the logs
 - Review the post-setup instructions in the workflow output
 
-### Step 5: Post-Deployment
+### Step 5: Review Outputs
 
-After user setup, you need to manually:
-
-1. **Enable code-server** (requires sudo):
-
-   ```bash
-   ssh root@your-server 'systemctl enable --now code-server@developer'
-   ```
-
-2. **Get code-server credentials**:
-
-   ```bash
-   ssh developer@your-server 'cat ~/.config/code-server/config.yaml'
-   ```
-
-3. **Get SSH public key** (for GitHub/GitLab):
-
-   ```bash
-   ssh developer@your-server 'cat ~/.ssh/id_ed25519.pub'
-   ```
-
-4. **Restart the session**:
-   ```bash
-   ssh developer@your-server 'source ~/.bashrc'
-   ```
+- The workflow attempts to enable the code-server service automatically.
+- Code-server credentials and the generated SSH public key are printed in the run logs.
+- Restarting the shell during the run is handled by the setup scripts.
 
 ## Deployment Scenarios
 

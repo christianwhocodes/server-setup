@@ -79,24 +79,47 @@ jobs:
             export CODE_SERVER_PORT_END="${{ vars.CODE_SERVER_PORT_END || '8100' }}"
             bash -c "$(curl -sSL https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/user/setup.sh)"
           ENDSSH
-
+      - name: Enable code-server service
+        if: inputs.setup_type == 'user' || inputs.setup_type == 'both'
+        run: |
+          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} -o StrictHostKeyChecking=accept-new ${{ inputs.server_user }}@${{ inputs.server_host }} << 'ENDSSH'
+            TARGET_USER="${{ inputs.server_user }}"
+            if command -v sudo >/dev/null 2>&1; then
+              sudo -n systemctl enable --now code-server@"$TARGET_USER" || echo "Skipping code-server enable (sudo password required)"
+            else
+              systemctl enable --now code-server@"$TARGET_USER" || echo "Skipping code-server enable (insufficient permissions)"
+            fi
+          ENDSSH
+      - name: Collect user setup outputs
+        if: inputs.setup_type == 'user' || inputs.setup_type == 'both'
+        run: |
+          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} -o StrictHostKeyChecking=accept-new ${{ inputs.server_user }}@${{ inputs.server_host }} << 'ENDSSH'
+            CONFIG_PATH="$HOME/.config/code-server/config.yaml"
+            if [ -f "$CONFIG_PATH" ]; then
+              echo "----- code-server config -----"
+              cat "$CONFIG_PATH"
+              echo "------------------------------"
+            else
+              echo "code-server config not found at $CONFIG_PATH"
+            fi
+            KEY_PATH="$HOME/.ssh/id_ed25519.pub"
+            if [ -f "$KEY_PATH" ]; then
+              echo "----- SSH public key -----"
+              cat "$KEY_PATH"
+              echo "--------------------------"
+            else
+              echo "SSH public key not found at $KEY_PATH"
+            fi
+          ENDSSH
       - name: Display Post-Setup Instructions
         if: inputs.setup_type == 'user' || inputs.setup_type == 'both'
         run: |
           echo "✅ Setup completed successfully!"
           echo ""
-          echo "📋 Next Steps:"
-          echo "1. If you ran user setup, retrieve the Code Server password and port:"
-          echo "   ssh -i ~/.ssh/deploy_key ${{ inputs.server_user }}@${{ inputs.server_host }} 'cat ~/.config/code-server/config.yaml'"
+          echo "📋 Review the workflow logs for code-server credentials and the generated SSH public key."
+          echo "⚙️ If code-server was not enabled automatically, ensure the target user has passwordless sudo access for systemctl."
           echo ""
-          echo "2. Retrieve the SSH public key to add to your Git hosting service:"
-          echo "   ssh -i ~/.ssh/deploy_key ${{ inputs.server_user }}@${{ inputs.server_host }} 'cat ~/.ssh/id_ed25519.pub'"
-          echo ""
-          echo "3. If you ran user setup, enable the code-server service (requires sudo):"
-          echo "   ssh -i ~/.ssh/deploy_key root@${{ inputs.server_host }} 'systemctl enable --now code-server@${{ inputs.server_user }}'"
-          echo ""
-          echo "4. Restart the session on the server:"
-          echo "   ssh -i ~/.ssh/deploy_key ${{ inputs.server_user }}@${{ inputs.server_host }} 'source ~/.bashrc && exec /bin/bash'"
+          echo "🔑 Remember to secure your server and manage access to the SSH private key."
 
       - name: Cleanup SSH key
         if: always()

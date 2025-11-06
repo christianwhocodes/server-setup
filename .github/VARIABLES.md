@@ -63,21 +63,3 @@ All variables have sensible defaults and are optional. Configure them only if yo
 4. Click **New repository variable**
 5. Enter the variable name and value
 6. Click **Add variable**
-
-## Environment Variables for Manual Setup
-
-These variables are for manual script execution only (not used by the GitHub Actions workflow):
-
-```bash
-export REPO_OWNER="myusername"
-export REPO_NAME="foundry"
-export REPO_BRANCH="main"
-export GIT_USER_NAME="John Doe"
-export GIT_USER_EMAIL="john@example.com"
-export NVM_VERSION="v0.40.3"
-export CODE_SERVER_PORT_START="9000"
-export CODE_SERVER_PORT_END="9100"
-
-# Then run the setup
-bash -c "$(curl -sSL https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/${REPO_BRANCH}/user/setup.sh)"
-```
