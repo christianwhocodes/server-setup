@@ -6,7 +6,7 @@ Automatically setup your Linux server with development tools and services using 
 
 1. **Fork this repository** - You'll need your own copy to store secrets
 2. **Add your SSH key** to GitHub Secrets as `SERVER_SSH_KEY`
-3. **Set your sudo user** in GitHub Variables as `SUDO_ACCESS_USER`
+3. **Set your sudo user** in GitHub Secrets as `SUDO_ACCESS_USER`
 4. **Run the workflow** - Actions → Setup Server → Choose your modules!
 
 ## ✨ Setup Profiles
@@ -80,15 +80,19 @@ Use repository variables for fine-grained control:
 
 ### 1. Configure GitHub Secrets
 
-Navigate to your repository's **Settings** → **Secrets and variables** → **Actions**:
+Navigate to your repository's **Settings** → **Secrets and variables** → **Actions** → **Secrets**:
 
-**Required Secret:**
+**Required Secrets:**
 
-| Secret Name      | Description                       | Value                                   |
-| ---------------- | --------------------------------- | --------------------------------------- |
-| `SERVER_SSH_KEY` | SSH private key for server access | Entire content of your private key file |
+| Secret Name        | Description                       | Value                                   |
+| ------------------ | --------------------------------- | --------------------------------------- |
+| `SERVER_SSH_KEY`   | SSH private key for server access | Entire content of your private key file |
+| `SUDO_ACCESS_USER` | User with passwordless sudo       | `ubuntu` or `root`                      |
 
-**Important:** The corresponding public key must be in your sudo user's `~/.ssh/authorized_keys` on the server.
+**Important Notes:**
+
+- The public key corresponding to `SERVER_SSH_KEY` must be in your sudo user's `~/.ssh/authorized_keys` on the server
+- `SUDO_ACCESS_USER` must already exist on the server with passwordless sudo access and SSH access using the `SERVER_SSH_KEY`
 
 ### 2. Configure GitHub Variables
 

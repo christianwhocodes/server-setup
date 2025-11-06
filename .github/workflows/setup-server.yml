@@ -165,8 +165,8 @@ jobs:
              [[ "${{ steps.modules.outputs.setup_postgres }}" == "true" ]]; then
             echo "has_system_modules=true" >> $GITHUB_OUTPUT
             echo "⚠️  Note: System setup modules require SUDO_ACCESS_USER to be configured"
-            if [[ -z "${{ vars.SUDO_ACCESS_USER }}" && -z "${{ secrets.SUDO_ACCESS_USER }}" ]]; then
-              echo "❌ Error: SUDO_ACCESS_USER variable or secret must be set for system operations"
+            if [[ -z "${{ secrets.SUDO_ACCESS_USER }}" ]]; then
+              echo "❌ Error: SUDO_ACCESS_USER secret must be set for system operations"
               exit 1
             fi
           else
@@ -198,11 +198,8 @@ jobs:
       - name: Determine SSH user
         id: ssh_user
         run: |
-          # Use SUDO_ACCESS_USER if available (prefer secret over var), otherwise use target_user
+          # Use SUDO_ACCESS_USER if available, otherwise use target_user
           SUDO_USER="${{ secrets.SUDO_ACCESS_USER }}"
-          if [[ -z "$SUDO_USER" ]]; then
-            SUDO_USER="${{ vars.SUDO_ACCESS_USER }}"
-          fi
 
           # For initial connection, use SUDO_ACCESS_USER if any system setup is needed
           if [[ "${{ steps.validate.outputs.has_system_modules }}" == "true" ]] && [[ -n "$SUDO_USER" ]]; then

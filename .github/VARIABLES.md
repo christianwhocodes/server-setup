@@ -31,7 +31,7 @@ The SSH private key used to connect to your server for deployment.
 - Regularly rotate your deployment keys
 - Never commit private keys to version control
 
-### SUDO_ACCESS_USER (Variable or Secret)
+### SUDO_ACCESS_USER (Secret)
 
 The username of a user with passwordless sudo access on the server. This user is used for system-level operations (installing packages, configuring services, etc.).
 
@@ -41,11 +41,9 @@ The username of a user with passwordless sudo access on the server. This user is
 - Must have SSH access with the `SERVER_SSH_KEY`
 
 **Setup:**
-Add as either a variable or secret:
 
-- Go to repository Settings → Secrets and variables → Actions
-- For Variable: Click "Variables" tab → "New repository variable"
-- For Secret (more secure): Click "Secrets" tab → "New repository secret"
+- Go to repository Settings → Secrets and variables → Actions → **Secrets** tab
+- Click "New repository secret"
 - Name: `SUDO_ACCESS_USER`
 - Value: Username (e.g., `ubuntu`, `root`, or your sudo user)
 
@@ -182,10 +180,10 @@ Control which user-level tools to install (no sudo required):
 
 1. Navigate to your repository on GitHub
 2. Go to **Settings** → **Secrets and variables** → **Actions**
-3. Click the **Variables** tab (or **Secrets** tab for secrets)
-4. Click **New repository variable** (or **New repository secret**)
-5. Enter the variable/secret name and value
-6. Click **Add variable** (or **Add secret**)
+3. For secrets: Click the **Secrets** tab, then **New repository secret**
+4. For variables: Click the **Variables** tab, then **New repository variable**
+5. Enter the secret/variable name and value
+6. Click **Add secret** or **Add variable**
 
 ---
 

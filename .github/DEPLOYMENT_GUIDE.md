@@ -46,10 +46,10 @@ This guide explains how to use the GitHub Actions workflow to automatically depl
 
 ### Step 2: Configure SUDO_ACCESS_USER
 
-Add the username of your sudo user:
+Add the username of your sudo user as a secret:
 
-- Go to: **Settings** → **Secrets and variables** → **Actions** → **Variables** (or **Secrets** for more security)
-- Click **New repository variable** (or **New repository secret**)
+- Go to: **Settings** → **Secrets and variables** → **Actions** → **Secrets**
+- Click **New repository secret**
 - Name: `SUDO_ACCESS_USER`
 - Value: `ubuntu` (or `root`, or your sudo username)
 
@@ -114,7 +114,7 @@ This is a common source of confusion, so let's clarify:
 
 ### Two Types of Users
 
-1. **SUDO_ACCESS_USER** (GitHub Variable/Secret)
+1. **SUDO_ACCESS_USER** (GitHub Secret)
    - Purpose: Execute system-level operations
    - Requirements:
      - Must already exist on the server
