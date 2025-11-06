@@ -74,7 +74,7 @@ Navigate to **Settings** → **Secrets and variables** → **Actions** → **Var
 | `CODE_SERVER_PORT_START` | Code server port range start | `8080`        |
 | `CODE_SERVER_PORT_END`   | Code server port range end   | `8100`        |
 
-Note: The workflow always uses the repository and commit that triggered the run. There are no overrides via REPO*\* variables. REPO*\* variables shown below are only for manual setup.
+**Note:** The workflow automatically uses the repository and commit that triggered the run.
 
 #### 3. Run the Workflow
 
