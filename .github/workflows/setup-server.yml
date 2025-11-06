@@ -139,8 +139,23 @@ jobs:
       - name: Setup SSH key
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SERVER_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 700 ~/.ssh
+          
+          # Use cat with heredoc to safely write the key
+          cat > ~/.ssh/deploy_key <<'SSHKEY_EOF'
+          ${{ secrets.SERVER_SSH_KEY }}
+          SSHKEY_EOF
+          
+          # Ensure proper line ending
+          echo "" >> ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
+          
+          # Verify key format
+          if ! ssh-keygen -l -f ~/.ssh/deploy_key >/dev/null 2>&1; then
+            echo "❌ Error: Invalid SSH key format"
+            exit 1
+          fi
+          
           ssh-keyscan -p ${{ inputs.server_port }} -H ${{ inputs.server_host }} >> ~/.ssh/known_hosts 2>/dev/null || true
 
       - name: Determine SSH user
@@ -427,6 +442,23 @@ jobs:
             
             echo "🔧 Enabling code-server service..."
             
+            # Wait a moment for systemd to recognize the service
+            sleep 2
+            
+            # Check if service file exists
+            SERVICE_FILE=""
+            if [[ $EUID -eq 0 ]]; then
+              SERVICE_FILE="/usr/lib/systemd/user/code-server.service"
+            else
+              SERVICE_FILE="$HOME/.config/systemd/user/code-server.service"
+            fi
+            
+            if [[ ! -f "$SERVICE_FILE" ]] && [[ ! -f "/lib/systemd/system/code-server@.service" ]]; then
+              echo "⚠️  Service file not found. Cannot enable service automatically."
+              echo "   Run manually: systemctl --user enable --now code-server"
+              exit 0
+            fi
+            
             # Try to enable code-server
             if [[ $EUID -eq 0 ]]; then
               # Running as root, enable for root
@@ -472,6 +504,10 @@ jobs:
           ENDSSH
 
           # Parse output and set as masked outputs
+          PORT=""
+          PASSWORD=""
+          SSH_KEY=""
+          
           while IFS= read -r line; do
             if [[ "$line" =~ ^CODE_SERVER_PORT= ]]; then
               PORT=${line#*=}
@@ -489,6 +525,22 @@ jobs:
               echo "ssh_key=$SSH_KEY" >> $GITHUB_OUTPUT
             fi
           done < "$TEMP_DIR/output"
+
+          # Validate we got the expected credentials
+          if [[ "${{ inputs.setup_code_server_user }}" == "true" ]]; then
+            if [[ -z "$PORT" || -z "$PASSWORD" ]]; then
+              echo "::error::Failed to retrieve code-server credentials"
+              echo "::error::Port: $PORT, Password: ${PASSWORD:+[set]}"
+              exit 1
+            fi
+          fi
+          
+          if [[ "${{ inputs.setup_git_ssh }}" == "true" ]]; then
+            if [[ -z "$SSH_KEY" ]]; then
+              echo "::error::Failed to retrieve SSH public key"
+              exit 1
+            fi
+          fi
 
           rm -rf "$TEMP_DIR"
 
