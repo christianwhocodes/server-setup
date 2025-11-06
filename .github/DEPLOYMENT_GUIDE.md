@@ -13,19 +13,13 @@ This guide explains how to use the GitHub Actions workflow to automatically depl
 
 ### Step 1: Add SSH Key to GitHub Secrets
 
-1. Generate an SSH key (if needed):
+1. When deploying your server VM on your platform, (e.g. Amazon EC2, DigitalOcean Droplet etc), ensure that you have configured the default user (e.g. ubuntu or root) with SSH login access. If you don't have an SSH Key pair, create it as shown below, and set the public key when you are deploying your VM instance on your platform:
 
    ```bash
    ssh-keygen -t ed25519 -f ~/.ssh/foundry_setup
    ```
 
-2. Copy public key to your sudo user on the server:
-
-   ```bash
-   ssh-copy-id -i ~/.ssh/foundry_setup.pub ubuntu@your-server-ip
-   ```
-
-3. Add private key to GitHub:
+2. Add private key to GitHub:
    - Go to: **Settings** → **Secrets and variables** → **Actions** → **Secrets**
    - Click **New repository secret**
    - Name: `SERVER_SSH_KEY`
@@ -39,7 +33,7 @@ Add the username of your sudo user:
 - Name: `SUDO_ACCESS_USER`
 - Value: `ubuntu` (or `root`, or your sudo username)
 
-**Note:** This user must have passwordless sudo access and SSH access with the `SERVER_SSH_KEY`.
+**Note:** This user (e.g. ubuntu or root) must have passwordless sudo access and SSH access with the `SERVER_SSH_KEY`.
 
 ### Step 3: (Optional) Configure Repository Variables
 
