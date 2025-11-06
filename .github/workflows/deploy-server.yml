@@ -51,22 +51,22 @@ jobs:
 
       - name: Test SSH Connection
         run: |
-          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} -o StrictHostKeyChecking=no ${{ inputs.server_user }}@${{ inputs.server_host }} "echo 'SSH connection successful'"
+          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} -o StrictHostKeyChecking=accept-new ${{ inputs.server_user }}@${{ inputs.server_host }} "echo 'SSH connection successful'"
 
       - name: Run System Setup
         if: inputs.setup_type == 'system' || inputs.setup_type == 'both'
         run: |
-          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} -o StrictHostKeyChecking=no ${{ inputs.server_user }}@${{ inputs.server_host }} << 'ENDSSH'
+          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} -o StrictHostKeyChecking=accept-new ${{ inputs.server_user }}@${{ inputs.server_host }} << 'ENDSSH'
             export FOUNDRY_REPO_OWNER="${{ vars.FOUNDRY_REPO_OWNER }}"
             export FOUNDRY_REPO_NAME="${{ vars.FOUNDRY_REPO_NAME }}"
             export FOUNDRY_REPO_BRANCH="${{ vars.FOUNDRY_REPO_BRANCH }}"
-            bash -c "$(curl -sSL https://raw.githubusercontent.com/${{ github.repository }}/${{ github.ref_name }}/system/setup.sh)"
+            bash -c "$(curl -sSL https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/system/setup.sh)"
           ENDSSH
 
       - name: Run User Setup
         if: inputs.setup_type == 'user' || inputs.setup_type == 'both'
         run: |
-          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} -o StrictHostKeyChecking=no ${{ inputs.server_user }}@${{ inputs.server_host }} << 'ENDSSH'
+          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} -o StrictHostKeyChecking=accept-new ${{ inputs.server_user }}@${{ inputs.server_host }} << 'ENDSSH'
             export FOUNDRY_REPO_OWNER="${{ vars.FOUNDRY_REPO_OWNER }}"
             export FOUNDRY_REPO_NAME="${{ vars.FOUNDRY_REPO_NAME }}"
             export FOUNDRY_REPO_BRANCH="${{ vars.FOUNDRY_REPO_BRANCH }}"
@@ -75,7 +75,7 @@ jobs:
             export NVM_VERSION="${{ vars.NVM_VERSION }}"
             export CODE_SERVER_PORT_START="${{ vars.CODE_SERVER_PORT_START }}"
             export CODE_SERVER_PORT_END="${{ vars.CODE_SERVER_PORT_END }}"
-            bash -c "$(curl -sSL https://raw.githubusercontent.com/${{ github.repository }}/${{ github.ref_name }}/user/setup.sh)"
+            bash -c "$(curl -sSL https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/user/setup.sh)"
           ENDSSH
 
       - name: Display Post-Setup Instructions

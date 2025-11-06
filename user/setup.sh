@@ -65,7 +65,7 @@ rm -rf "$TMP_DIR"
 # Final message 
 echo -e "${GREEN}=== ✅ Finished Setup ($SETUP_TYPE) Configuration ===${NC}" 
 echo -e "${BLUE}Code-server is configured to run on port${NC} $CODE_SERVER_PORT"
-echo -e "${BLUE}Code-server password in ~/.config/code-server/config.yaml:${NC} $CODE_SERVER_PASS".
+echo -e "${BLUE}Code-server password in ~/.config/code-server/config.yaml:${NC} $CODE_SERVER_PASS"
 echo -e "${BLUE}SSH public key (add this to your git hosting service):${NC}"
 cat ~/.ssh/id_ed25519.pub
 
