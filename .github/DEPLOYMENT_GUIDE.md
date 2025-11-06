@@ -37,7 +37,7 @@ This guide explains how to use the GitHub Actions workflow to automatically depl
 
 ### Step 2: (Optional) Configure Repository Variables
 
-See [VARIABLES.md](VARIABLES.md) for available variables. Only configure if you need custom values.
+See [VARIABLES.md](VARIABLES.md) for available variables.
 
 ### Step 3: Run the Workflow
 
@@ -189,10 +189,7 @@ Run the workflow multiple times with different server IPs to deploy to multiple 
 
 **Solutions:**
 
-1. Check repository variables are correct:
-   - `REPO_OWNER`
-   - `REPO_NAME`
-   - `REPO_BRANCH`
+1. Ensure the repository/commit of the current workflow run is accessible from your server
 2. Verify server has internet access: `curl -I https://github.com`
 3. Check GitHub is accessible from your server
 
@@ -200,10 +197,7 @@ Run the workflow multiple times with different server IPs to deploy to multiple 
 
 ### Custom Repository Branch
 
-To test changes on a feature branch:
-
-1. Set repository variable `REPO_BRANCH` to your branch name
-2. Or, modify the workflow to use a different branch temporarily
+To test changes on a feature branch, run the workflow from that branch; it will use that commit automatically.
 
 ### Parallel Deployments
 

@@ -2,6 +2,8 @@
 
 This file documents the available repository variables for the GitHub Actions deployment workflow.
 
+Note: The workflow always uses the repository and commit of the run. REPO_OWNER, REPO_NAME, and REPO_BRANCH are not read by the workflow and are only shown below for manual setup.
+
 ## Required GitHub Secrets
 
 ### SERVER_SSH_KEY
@@ -31,27 +33,6 @@ The SSH private key used to connect to your server.
 ## Optional Repository Variables
 
 All variables have sensible defaults and are optional. Configure them only if you need custom values.
-
-### REPO_OWNER
-
-- **Description:** GitHub username or organization that owns the foundry repository
-- **Default:** `christianwhocodes`
-- **Example:** `your-github-username`
-- **Use case:** When using a forked repository
-
-### REPO_NAME
-
-- **Description:** Name of the foundry repository
-- **Default:** `foundry`
-- **Example:** `my-server-setup`
-- **Use case:** When you've renamed the repository
-
-### REPO_BRANCH
-
-- **Description:** Branch to use for fetching scripts
-- **Default:** `main`
-- **Example:** `develop`, `feature/custom-setup`
-- **Use case:** Testing changes on a different branch
 
 ### NVM_VERSION
 
@@ -83,21 +64,9 @@ All variables have sensible defaults and are optional. Configure them only if yo
 5. Enter the variable name and value
 6. Click **Add variable**
 
-## Example Configuration
-
-For a forked repository on a feature branch with custom ports:
-
-```
-REPO_OWNER = myusername
-REPO_NAME = foundry
-REPO_BRANCH = feature/custom-changes
-CODE_SERVER_PORT_START = 9000
-CODE_SERVER_PORT_END = 9100
-```
-
 ## Environment Variables for Manual Setup
 
-These same variables can be used when running the scripts manually:
+These variables are for manual script execution only (not used by the GitHub Actions workflow):
 
 ```bash
 export REPO_OWNER="myusername"

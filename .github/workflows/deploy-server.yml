@@ -59,9 +59,9 @@ jobs:
         if: inputs.setup_type == 'system' || inputs.setup_type == 'both'
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} -o StrictHostKeyChecking=accept-new ${{ inputs.server_user }}@${{ inputs.server_host }} << 'ENDSSH'
-            export REPO_OWNER="${{ vars.REPO_OWNER }}"
-            export REPO_NAME="${{ vars.REPO_NAME }}"
-            export REPO_BRANCH="${{ vars.REPO_BRANCH }}"
+            export REPO_OWNER="${{ github.repository_owner }}"
+            export REPO_NAME="${{ github.event.repository.name }}"
+            export REPO_BRANCH="${{ github.sha }}"
             bash -c "$(curl -sSL https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/system/setup.sh)"
           ENDSSH
 
@@ -69,14 +69,14 @@ jobs:
         if: inputs.setup_type == 'user' || inputs.setup_type == 'both'
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} -o StrictHostKeyChecking=accept-new ${{ inputs.server_user }}@${{ inputs.server_host }} << 'ENDSSH'
-            export REPO_OWNER="${{ vars.REPO_OWNER }}"
-            export REPO_NAME="${{ vars.REPO_NAME }}"
-            export REPO_BRANCH="${{ vars.REPO_BRANCH }}"
+            export REPO_OWNER="${{ github.repository_owner }}"
+            export REPO_NAME="${{ github.event.repository.name }}"
+            export REPO_BRANCH="${{ github.sha }}"
             export GIT_USER_NAME="${{ inputs.git_user_name }}"
             export GIT_USER_EMAIL="${{ inputs.git_user_email }}"
-            export NVM_VERSION="${{ vars.NVM_VERSION }}"
-            export CODE_SERVER_PORT_START="${{ vars.CODE_SERVER_PORT_START }}"
-            export CODE_SERVER_PORT_END="${{ vars.CODE_SERVER_PORT_END }}"
+            export NVM_VERSION="${{ vars.NVM_VERSION || 'v0.40.3' }}"
+            export CODE_SERVER_PORT_START="${{ vars.CODE_SERVER_PORT_START || '8080' }}"
+            export CODE_SERVER_PORT_END="${{ vars.CODE_SERVER_PORT_END || '8100' }}"
             bash -c "$(curl -sSL https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/user/setup.sh)"
           ENDSSH
 

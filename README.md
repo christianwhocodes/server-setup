@@ -68,14 +68,13 @@ Navigate to your repository's **Settings** → **Secrets and variables** → **A
 
 Navigate to **Settings** → **Secrets and variables** → **Actions** → **Variables** tab → **New repository variable**:
 
-| Variable Name            | Description                  | Default Value       |
-| ------------------------ | ---------------------------- | ------------------- |
-| `REPO_OWNER`             | Repository owner name        | `christianwhocodes` |
-| `REPO_NAME`              | Repository name              | `foundry`           |
-| `REPO_BRANCH`            | Branch to use                | `main`              |
-| `NVM_VERSION`            | Node Version Manager version | `v0.40.3`           |
-| `CODE_SERVER_PORT_START` | Code server port range start | `8080`              |
-| `CODE_SERVER_PORT_END`   | Code server port range end   | `8100`              |
+| Variable Name            | Description                  | Default Value |
+| ------------------------ | ---------------------------- | ------------- |
+| `NVM_VERSION`            | Node Version Manager version | `v0.40.3`     |
+| `CODE_SERVER_PORT_START` | Code server port range start | `8080`        |
+| `CODE_SERVER_PORT_END`   | Code server port range end   | `8100`        |
+
+Note: The workflow always uses the repository and commit that triggered the run. There are no overrides via REPO*\* variables. REPO*\* variables shown below are only for manual setup.
 
 #### 3. Run the Workflow
 
