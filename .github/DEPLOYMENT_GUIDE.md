@@ -6,7 +6,7 @@ This guide explains how to use the GitHub Actions workflow to automatically depl
 
 1. **Ubuntu Server**: Fresh Ubuntu 24.04 server with SSH access
 2. **SSH Key Pair**: For connecting to your server
-3. **GitHub Repository**: This repository (forked or original)
+3. **GitHub Repository**: Fork this repository to your own account (required to store secrets)
 4. **Server Prepared**:
    - OpenSSH installed and running
    - Firewall configured to allow SSH

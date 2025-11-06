@@ -19,10 +19,14 @@ openssh_setup() {
   fi
 
   if command -v ufw >/dev/null 2>&1; then
-    if ufw status | grep -q "Status: inactive"; then
+    # Check if OpenSSH rule already exists
+    if ! ufw status | grep -q "OpenSSH.*ALLOW"; then
       if ! ufw allow OpenSSH; then
         echo -e "${RED}⚠️  Warning: Failed to allow OpenSSH in ufw${NC}"
       fi
+    fi
+    
+    if ufw status | grep -q "Status: inactive"; then
       if ! ufw --force enable; then
         echo -e "${RED}⚠️  Warning: Failed to enable ufw${NC}"
       fi
@@ -48,9 +52,14 @@ necessary_packages_setup() {
 nginx_setup() {
   echo -e "${BLUE}Setting up Nginx...${NC}"
 
-  if ! apt install -y nginx apache2-utils; then
-    echo -e "${RED}❌ Failed to install Nginx${NC}"
-    exit 1
+  # Check if nginx is already installed
+  if ! command -v nginx >/dev/null 2>&1; then
+    if ! apt install -y nginx; then
+      echo -e "${RED}❌ Failed to install Nginx${NC}"
+      exit 1
+    fi
+  else
+    echo -e "${GREEN}✅ Nginx already installed${NC}"
   fi
 
   if ! command -v ufw >/dev/null 2>&1; then
@@ -60,26 +69,33 @@ nginx_setup() {
   fi
 
   if command -v ufw >/dev/null 2>&1; then
-    if ! ufw allow 'Nginx Full'; then
-      echo -e "${RED}⚠️  Warning: Failed to allow Nginx in ufw${NC}"
+    # Check if Nginx Full rule already exists
+    if ! ufw status | grep -q "Nginx Full.*ALLOW"; then
+      if ! ufw allow 'Nginx Full'; then
+        echo -e "${RED}⚠️  Warning: Failed to allow Nginx in ufw${NC}"
+      fi
     fi
   fi
 
-  if ! systemctl enable --now nginx; then
-    echo -e "${RED}❌ Failed to enable/start Nginx${NC}"
-    exit 1
+  if ! systemctl is-enabled --quiet nginx 2>/dev/null; then
+    if ! systemctl enable nginx; then
+      echo -e "${RED}❌ Failed to enable Nginx${NC}"
+      exit 1
+    fi
   fi
 
-  # Verify nginx is running
   if ! systemctl is-active --quiet nginx; then
-    echo -e "${RED}❌ Nginx failed to start${NC}"
-    exit 1
+    if ! systemctl start nginx; then
+      echo -e "${RED}❌ Failed to start Nginx${NC}"
+      exit 1
+    fi
   fi
 
   echo -e "${GREEN}✅ Nginx is running${NC}"
 
-  rm -f /etc/nginx/snippets/port-proxy.conf
-  touch /etc/nginx/snippets/port-proxy.conf
+  # Create or update snippet files
+  mkdir -p /etc/nginx/snippets
+  
   cat > /etc/nginx/snippets/port-proxy.conf <<'EOF'
 location / {
     proxy_pass http://127.0.0.1:$upstream_port;
@@ -100,6 +116,12 @@ certbot_setup() {
     exit 1
   fi
 
+  # Check if certbot is already installed via snap
+  if snap list certbot >/dev/null 2>&1; then
+    echo -e "${GREEN}✅ Certbot already installed${NC}"
+    return 0
+  fi
+
   if ! snap install core; then
     echo -e "${RED}❌ Failed to install snap core${NC}"
     exit 1
@@ -107,6 +129,7 @@ certbot_setup() {
 
   snap refresh core
 
+  # Remove apt version if it exists
   apt remove -y certbot 2>/dev/null || true
 
   if ! snap install --classic certbot; then
@@ -120,21 +143,27 @@ certbot_setup() {
 code_server_setup() {
   echo -e "${BLUE}Setting up code-server...${NC}"
 
-  if ! curl -fsSL https://code-server.dev/install.sh | sh; then
-    echo -e "${RED}❌ Failed to install code-server${NC}"
-    exit 1
+  # Check if code-server is already installed
+  if command -v code-server >/dev/null 2>&1; then
+    echo -e "${GREEN}✅ code-server already installed${NC}"
+  else
+    if ! curl -fsSL https://code-server.dev/install.sh | sh; then
+      echo -e "${RED}❌ Failed to install code-server${NC}"
+      exit 1
+    fi
+
+    # Verify code-server was installed
+    if ! command -v code-server >/dev/null 2>&1; then
+      echo -e "${RED}❌ code-server command not found after installation${NC}"
+      exit 1
+    fi
+
+    echo -e "${GREEN}✅ code-server installed successfully${NC}"
   fi
 
-  # Verify code-server was installed
-  if ! command -v code-server >/dev/null 2>&1; then
-    echo -e "${RED}❌ code-server command not found after installation${NC}"
-    exit 1
-  fi
-
-  echo -e "${GREEN}✅ code-server installed successfully${NC}"
-
-  rm -f /etc/nginx/snippets/code-server-proxy.conf
-  touch /etc/nginx/snippets/code-server-proxy.conf
+  # Create or update snippet file
+  mkdir -p /etc/nginx/snippets
+  
   cat > /etc/nginx/snippets/code-server-proxy.conf <<'EOF'
 location / {
     proxy_pass http://127.0.0.1:$code_server_port;
@@ -151,20 +180,28 @@ EOF
 postgres_setup() {
   echo -e "${BLUE}Setting up PostgreSQL...${NC}"
 
-  if ! apt install -y postgresql postgresql-contrib libpq-dev; then
-    echo -e "${RED}❌ Failed to install PostgreSQL${NC}"
-    exit 1
+  # Check if PostgreSQL is already installed
+  if command -v psql >/dev/null 2>&1; then
+    echo -e "${GREEN}✅ PostgreSQL already installed${NC}"
+  else
+    if ! apt install -y postgresql postgresql-contrib libpq-dev; then
+      echo -e "${RED}❌ Failed to install PostgreSQL${NC}"
+      exit 1
+    fi
   fi
 
-  if ! systemctl enable --now postgresql; then
-    echo -e "${RED}❌ Failed to enable/start PostgreSQL${NC}"
-    exit 1
+  if ! systemctl is-enabled --quiet postgresql 2>/dev/null; then
+    if ! systemctl enable postgresql; then
+      echo -e "${RED}❌ Failed to enable PostgreSQL${NC}"
+      exit 1
+    fi
   fi
 
-  # Verify postgres is running
   if ! systemctl is-active --quiet postgresql; then
-    echo -e "${RED}❌ PostgreSQL failed to start${NC}"
-    exit 1
+    if ! systemctl start postgresql; then
+      echo -e "${RED}❌ Failed to start PostgreSQL${NC}"
+      exit 1
+    fi
   fi
 
   echo -e "${GREEN}✅ PostgreSQL is running${NC}"

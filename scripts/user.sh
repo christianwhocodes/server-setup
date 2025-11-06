@@ -58,6 +58,19 @@ code_server_setup() {
 
   validate_port_range "$CODE_SERVER_PORT_START" "$CODE_SERVER_PORT_END"
 
+  # Check if config already exists
+  if [ -f "$HOME/.config/code-server/config.yaml" ]; then
+    EXISTING_PORT=$(grep "bind-addr:" "$HOME/.config/code-server/config.yaml" | awk -F: '{print $NF}' | tr -d ' ')
+    
+    # Check if existing port is still available
+    if [ -n "$EXISTING_PORT" ] && ! is_port_in_use "$EXISTING_PORT"; then
+      echo -e "${GREEN}✅ Using existing code-server config on port $EXISTING_PORT${NC}"
+      CODE_SERVER_PORT="$EXISTING_PORT"
+      CODE_SERVER_PASSWORD=$(grep "password:" "$HOME/.config/code-server/config.yaml" | awk -F: '{print $2}' | tr -d ' ')
+      return 0
+    fi
+  fi
+
   echo -e "${BLUE}Checking for available ports in range ${CODE_SERVER_PORT_START}-${CODE_SERVER_PORT_END}...${NC}"
   CODE_SERVER_PORT=$(find_available_port $CODE_SERVER_PORT_START $CODE_SERVER_PORT_END)
 
@@ -71,7 +84,6 @@ code_server_setup() {
   CODE_SERVER_PASSWORD=$(generate_random_password)
 
   mkdir -p "$HOME/.config/code-server"
-  rm -f "$HOME/.config/code-server/config.yaml"
   cat <<EOF >"$HOME/.config/code-server/config.yaml"
 bind-addr: 127.0.0.1:$CODE_SERVER_PORT
 auth: password
@@ -84,18 +96,28 @@ EOF
 uv_setup() {
   echo -e "${BLUE}Setting up uv...${NC}"
 
-  if ! curl -LsSf https://astral.sh/uv/install.sh | sh; then
-    echo -e "${RED}❌ Failed to install uv${NC}"
-    exit 1
+  # Check if uv is already installed
+  UV_BIN="$HOME/.local/bin/uv"
+  if [ -f "$UV_BIN" ]; then
+    echo -e "${GREEN}✅ uv already installed${NC}"
+  else
+    if ! curl -LsSf https://astral.sh/uv/install.sh | sh; then
+      echo -e "${RED}❌ Failed to install uv${NC}"
+      exit 1
+    fi
   fi
 
   # Try to install latest Python using uv's binary path directly
-  UV_BIN="$HOME/.local/bin/uv"
   if [ -f "$UV_BIN" ]; then
-    if ! "$UV_BIN" python install; then
-      echo -e "${BLUE}ℹ️  You can install Python manually after restarting your shell with: uv python install${NC}"
+    # Check if Python is already installed via uv
+    if "$UV_BIN" python list 2>/dev/null | grep -q "cpython"; then
+      echo -e "${GREEN}✅ Python already installed with uv${NC}"
     else
-      echo -e "${GREEN}✅ Python installed successfully with uv${NC}"
+      if ! "$UV_BIN" python install; then
+        echo -e "${BLUE}ℹ️  You can install Python manually after restarting your shell with: uv python install${NC}"
+      else
+        echo -e "${GREEN}✅ Python installed successfully with uv${NC}"
+      fi
     fi
   else
     echo -e "${BLUE}ℹ️  You can install Python manually after restarting your shell with: uv python install${NC}"
@@ -106,23 +128,34 @@ nvm_setup() {
   echo -e "${BLUE}Setting up nvm...${NC}"
 
   NVM_VERSION="${NVM_VERSION:-v0.40.3}"
-  if ! curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/${NVM_VERSION}/install.sh | bash; then
-    echo -e "${RED}❌ Failed to install nvm${NC}"
-    exit 1
+  
+  # Check if nvm is already installed
+  export NVM_DIR="$HOME/.nvm"
+  if [ -d "$NVM_DIR" ]; then
+    echo -e "${GREEN}✅ nvm already installed${NC}"
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+  else
+    if ! curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/${NVM_VERSION}/install.sh | bash; then
+      echo -e "${RED}❌ Failed to install nvm${NC}"
+      exit 1
+    fi
+    # Source nvm immediately to make it available in this session
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
   fi
 
-  # Source nvm immediately to make it available in this session
-  export NVM_DIR="$HOME/.nvm"
-  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-
   if command -v nvm >/dev/null 2>&1; then
-    if ! nvm install node; then
-      echo -e "${BLUE}ℹ️  You can install Node.js manually after restarting your shell with: nvm install node${NC}"
+    # Check if Node.js is already installed
+    if nvm ls | grep -q "node"; then
+      echo -e "${GREEN}✅ Node.js already installed with nvm${NC}"
     else
-      echo -e "${GREEN}✅ Node.js installed successfully with nvm${NC}"
+      if ! nvm install node; then
+        echo -e "${BLUE}ℹ️  You can install Node.js manually after restarting your shell with: nvm install node${NC}"
+      else
+        echo -e "${GREEN}✅ Node.js installed successfully with nvm${NC}"
 
-      if npm install -g npm@latest; then
-        echo -e "${GREEN}✅ npm updated successfully${NC}"
+        if npm install -g npm@latest; then
+          echo -e "${GREEN}✅ npm updated successfully${NC}"
+        fi
       fi
     fi
   else
@@ -133,7 +166,12 @@ nvm_setup() {
 repos_setup() {
   echo -e "${BLUE}Setting up repos directory...${NC}"
 
-  mkdir -p "$HOME/repos"
+  if [ -d "$HOME/repos" ]; then
+    echo -e "${GREEN}✅ repos directory already exists${NC}"
+  else
+    mkdir -p "$HOME/repos"
+    echo -e "${GREEN}✅ Created repos directory${NC}"
+  fi
 }
 
 git_ssh_setup() {
@@ -151,17 +189,24 @@ git_ssh_setup() {
     exit 1
   fi
 
+  # Configure git (safe to run multiple times)
   git config --global user.name "$GIT_USER_NAME"
   git config --global user.email "$GIT_USER_EMAIL"
 
   mkdir -p ~/.ssh
   chmod 700 ~/.ssh
 
-  ssh-keygen -t ed25519 -C "$GIT_USER_EMAIL" -N "" -f ~/.ssh/id_ed25519
-  chmod 600 ~/.ssh/id_ed25519
-  chmod 644 ~/.ssh/id_ed25519.pub
+  # Check if SSH key already exists
+  if [ -f ~/.ssh/id_ed25519 ]; then
+    echo -e "${GREEN}✅ SSH key already exists${NC}"
+  else
+    ssh-keygen -t ed25519 -C "$GIT_USER_EMAIL" -N "" -f ~/.ssh/id_ed25519
+    chmod 600 ~/.ssh/id_ed25519
+    chmod 644 ~/.ssh/id_ed25519.pub
+    echo -e "${GREEN}✅ Generated new SSH key${NC}"
+  fi
 
-  # Create SSH config for better key management
+  # Create SSH config if it doesn't exist
   if [ ! -f ~/.ssh/config ]; then
     touch ~/.ssh/config
     chmod 600 ~/.ssh/config
