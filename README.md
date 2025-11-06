@@ -10,6 +10,67 @@ Linux (Ubuntu) server-setup bash scripts for automation.
 
 ---
 
+## 🚀 Automated Deployment with GitHub Actions
+
+You can now automatically deploy the setup scripts to your server using GitHub Actions! This eliminates the need to manually copy and paste scripts into your terminal.
+
+### 📚 Prerequisites for Automated Deployment
+
+1. **Server SSH Key**: Generate an SSH key pair for server access
+2. **GitHub Repository**: Fork this repository or use your own
+3. **GitHub Secrets**: Add your SSH private key as a secret
+4. **GitHub Variables** (optional): Configure custom values
+
+### 🔧 Setup Instructions
+
+#### 1. Add SSH Key to GitHub Secrets
+
+Navigate to your repository's **Settings** → **Secrets and variables** → **Actions** → **New repository secret**:
+
+- **Name**: `SERVER_SSH_KEY`
+- **Value**: Your SSH private key content (the entire content of your private key file)
+
+#### 2. Configure Repository Variables (Optional)
+
+Navigate to **Settings** → **Secrets and variables** → **Actions** → **Variables** tab → **New repository variable**:
+
+| Variable Name | Description | Default Value |
+|---------------|-------------|---------------|
+| `FOUNDRY_REPO_OWNER` | Repository owner name | `christianwhocodes` |
+| `FOUNDRY_REPO_NAME` | Repository name | `foundry` |
+| `FOUNDRY_REPO_BRANCH` | Branch to use | `main` |
+| `NVM_VERSION` | Node Version Manager version | `v0.40.3` |
+| `CODE_SERVER_PORT_START` | Code server port range start | `8080` |
+| `CODE_SERVER_PORT_END` | Code server port range end | `8100` |
+
+#### 3. Run the Workflow
+
+1. Go to **Actions** → **Deploy Server Setup**
+2. Click **Run workflow**
+3. Fill in the required inputs:
+   - **Setup type**: Choose `system`, `user`, or `both`
+   - **Server host**: Your server IP or hostname
+   - **Server user**: SSH user (e.g., `root` for system, `developer` for user)
+   - **Server port**: SSH port (default: `22`)
+   - **Git user name**: Your Git name (required for user setup)
+   - **Git user email**: Your Git email (required for user setup)
+4. Click **Run workflow**
+
+The workflow will:
+- Connect to your server via SSH
+- Run the appropriate setup scripts
+- Display post-setup instructions
+
+### 🎯 Benefits of Automated Deployment
+
+- ✅ No manual copy-pasting of scripts
+- ✅ Consistent deployments across multiple servers
+- ✅ Version-controlled configuration
+- ✅ Easy to customize with repository variables
+- ✅ Audit trail of all deployments
+
+---
+
 ## 🌍 Global Setup _(sudo required)_
 
 Automated system setup bash script for a remote Linux (Ubuntu) server.
@@ -56,6 +117,17 @@ bash -c "$(curl -sSL https://raw.githubusercontent.com/christianwhocodes/foundry
 
 ```bash
 source ~/.bashrc && exec /bin/bash
+```
+
+### 🔧 Advanced: Using Custom Repository
+
+If you've forked this repository or want to use a different branch, you can set environment variables:
+
+```bash
+export FOUNDRY_REPO_OWNER="your-github-username"
+export FOUNDRY_REPO_NAME="foundry"
+export FOUNDRY_REPO_BRANCH="main"
+bash -c "$(curl -sSL https://raw.githubusercontent.com/${FOUNDRY_REPO_OWNER}/${FOUNDRY_REPO_NAME}/${FOUNDRY_REPO_BRANCH}/system/setup.sh)"
 ```
 
 ---
@@ -120,6 +192,27 @@ bash -c "$(curl -sSL https://raw.githubusercontent.com/christianwhocodes/foundry
 
 ```bash
 source ~/.bashrc && exec /bin/bash
+```
+
+### 🔧 Advanced: Using Environment Variables
+
+You can skip interactive prompts and customize settings by setting environment variables before running the setup:
+
+```bash
+# Required for non-interactive setup
+export GIT_USER_NAME="John Doe"
+export GIT_USER_EMAIL="john@example.com"
+
+# Optional customizations
+export FOUNDRY_REPO_OWNER="your-github-username"
+export FOUNDRY_REPO_NAME="foundry"
+export FOUNDRY_REPO_BRANCH="main"
+export NVM_VERSION="v0.40.3"
+export CODE_SERVER_PORT_START="8080"
+export CODE_SERVER_PORT_END="8100"
+
+# Run the setup
+bash -c "$(curl -sSL https://raw.githubusercontent.com/${FOUNDRY_REPO_OWNER:-christianwhocodes}/${FOUNDRY_REPO_NAME:-foundry}/${FOUNDRY_REPO_BRANCH:-main}/user/setup.sh)"
 ```
 
 **Step 3 (Optional):** Install Node.js, Python, and global packages:
