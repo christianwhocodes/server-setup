@@ -2,7 +2,7 @@
 
 This file documents the available repository variables for the GitHub Actions deployment workflow.
 
-Note: The workflow always uses the repository and commit of the run. REPO_OWNER, REPO_NAME, and REPO_BRANCH are not read by the workflow and are only shown below for manual setup.
+**Note:** The workflow automatically uses the repository and commit that triggered the run. No manual configuration is needed for repository information.
 
 ## Required GitHub Secrets
 
