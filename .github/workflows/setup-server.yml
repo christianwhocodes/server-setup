@@ -3,6 +3,7 @@ name: Setup Server
 on:
   workflow_dispatch:
     inputs:
+      # GitHub Actions has a limit of 10 inputs for workflow_dispatch events
       server_host:
         description: "Server IP address or hostname"
         required: true
@@ -16,6 +17,16 @@ on:
         description: "Target user to setup (will be created if doesn't exist)"
         required: true
         type: string
+      setup_profile:
+        description: "Setup profile to use"
+        required: true
+        type: choice
+        options:
+          - "Full Development Server"
+          - "System Services Only"
+          - "User Tools Only"
+          - "Custom (use repository variables)"
+        default: "Full Development Server"
       create_user_if_missing:
         description: "Create user if it doesn't exist"
         required: false
@@ -30,69 +41,12 @@ on:
         description: "SSH public key to add to authorized_keys (only when creating new user)"
         required: false
         type: string
-      # System setup modules
-      setup_openssh_ufw:
-        description: "Setup OpenSSH and UFW firewall"
-        required: false
-        type: boolean
-        default: false
-      setup_packages:
-        description: "Install necessary development packages"
-        required: false
-        type: boolean
-        default: false
-      setup_nginx:
-        description: "Install and configure Nginx"
-        required: false
-        type: boolean
-        default: false
-      setup_certbot:
-        description: "Install and configure Certbot"
-        required: false
-        type: boolean
-        default: false
-      setup_code_server_system:
-        description: "Install code-server system-wide"
-        required: false
-        type: boolean
-        default: false
-      setup_postgres:
-        description: "Install and configure PostgreSQL"
-        required: false
-        type: boolean
-        default: false
-      # User setup modules
-      setup_code_server_user:
-        description: "Configure code-server for user"
-        required: false
-        type: boolean
-        default: false
-      setup_uv:
-        description: "Install uv Python manager for user"
-        required: false
-        type: boolean
-        default: false
-      setup_nvm:
-        description: "Install nvm Node.js manager for user"
-        required: false
-        type: boolean
-        default: false
-      setup_repos_dir:
-        description: "Create repos directory for user"
-        required: false
-        type: boolean
-        default: false
-      setup_git_ssh:
-        description: "Setup Git config and SSH keys for user"
-        required: false
-        type: boolean
-        default: false
       git_user_name:
-        description: "Git user name (required for setup_git_ssh)"
+        description: "Git user name (required for user tools)"
         required: false
         type: string
       git_user_email:
-        description: "Git user email (required for setup_git_ssh)"
+        description: "Git user email (required for user tools)"
         required: false
         type: string
 
@@ -106,13 +60,92 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Determine modules to install
+        id: modules
+        run: |
+          PROFILE="${{ inputs.setup_profile }}"
+
+          # Default all to false
+          OPENSSH_UFW="false"
+          PACKAGES="false"
+          NGINX="false"
+          CERTBOT="false"
+          CODE_SERVER_SYS="false"
+          POSTGRES="false"
+          CODE_SERVER_USER="false"
+          UV="false"
+          NVM="false"
+          REPOS="false"
+          GIT_SSH="false"
+
+          case "$PROFILE" in
+            "Full Development Server")
+              OPENSSH_UFW="true"
+              PACKAGES="true"
+              NGINX="true"
+              CERTBOT="true"
+              CODE_SERVER_SYS="true"
+              POSTGRES="true"
+              CODE_SERVER_USER="true"
+              UV="true"
+              NVM="true"
+              REPOS="true"
+              GIT_SSH="true"
+              ;;
+            "System Services Only")
+              OPENSSH_UFW="true"
+              PACKAGES="true"
+              NGINX="true"
+              CERTBOT="true"
+              CODE_SERVER_SYS="true"
+              POSTGRES="true"
+              ;;
+            "User Tools Only")
+              CODE_SERVER_USER="true"
+              UV="true"
+              NVM="true"
+              REPOS="true"
+              GIT_SSH="true"
+              ;;
+            "Custom (use repository variables)")
+              # Read from repository variables
+              OPENSSH_UFW="${{ vars.SETUP_OPENSSH_UFW || 'false' }}"
+              PACKAGES="${{ vars.SETUP_PACKAGES || 'false' }}"
+              NGINX="${{ vars.SETUP_NGINX || 'false' }}"
+              CERTBOT="${{ vars.SETUP_CERTBOT || 'false' }}"
+              CODE_SERVER_SYS="${{ vars.SETUP_CODE_SERVER_SYSTEM || 'false' }}"
+              POSTGRES="${{ vars.SETUP_POSTGRES || 'false' }}"
+              CODE_SERVER_USER="${{ vars.SETUP_CODE_SERVER_USER || 'false' }}"
+              UV="${{ vars.SETUP_UV || 'false' }}"
+              NVM="${{ vars.SETUP_NVM || 'false' }}"
+              REPOS="${{ vars.SETUP_REPOS_DIR || 'false' }}"
+              GIT_SSH="${{ vars.SETUP_GIT_SSH || 'false' }}"
+              ;;
+          esac
+
+          echo "setup_openssh_ufw=$OPENSSH_UFW" >> $GITHUB_OUTPUT
+          echo "setup_packages=$PACKAGES" >> $GITHUB_OUTPUT
+          echo "setup_nginx=$NGINX" >> $GITHUB_OUTPUT
+          echo "setup_certbot=$CERTBOT" >> $GITHUB_OUTPUT
+          echo "setup_code_server_system=$CODE_SERVER_SYS" >> $GITHUB_OUTPUT
+          echo "setup_postgres=$POSTGRES" >> $GITHUB_OUTPUT
+          echo "setup_code_server_user=$CODE_SERVER_USER" >> $GITHUB_OUTPUT
+          echo "setup_uv=$UV" >> $GITHUB_OUTPUT
+          echo "setup_nvm=$NVM" >> $GITHUB_OUTPUT
+          echo "setup_repos_dir=$REPOS" >> $GITHUB_OUTPUT
+          echo "setup_git_ssh=$GIT_SSH" >> $GITHUB_OUTPUT
+
+          echo "📋 Selected Profile: $PROFILE"
+          echo "System Modules: openssh_ufw=$OPENSSH_UFW, packages=$PACKAGES, nginx=$NGINX, certbot=$CERTBOT, code_server_sys=$CODE_SERVER_SYS, postgres=$POSTGRES"
+          echo "User Modules: code_server_user=$CODE_SERVER_USER, uv=$UV, nvm=$NVM, repos=$REPOS, git_ssh=$GIT_SSH"
+
       - name: Validate inputs
         id: validate
         run: |
           # Validate git inputs for git_ssh setup
-          if [[ "${{ inputs.setup_git_ssh }}" == "true" ]]; then
+          if [[ "${{ steps.modules.outputs.setup_git_ssh }}" == "true" ]]; then
             if [[ -z "${{ inputs.git_user_name }}" || -z "${{ inputs.git_user_email }}" ]]; then
-              echo "❌ Error: git_user_name and git_user_email are required for setup_git_ssh"
+              echo "❌ Error: git_user_name and git_user_email are required when Git/SSH setup is enabled"
               exit 1
             fi
             
@@ -124,8 +157,12 @@ jobs:
           fi
 
           # Check if any system modules are enabled
-          SYSTEM_MODULES="${{ inputs.setup_openssh_ufw }}|${{ inputs.setup_packages }}|${{ inputs.setup_nginx }}|${{ inputs.setup_certbot }}|${{ inputs.setup_code_server_system }}|${{ inputs.setup_postgres }}"
-          if [[ "$SYSTEM_MODULES" == *"true"* ]]; then
+          if [[ "${{ steps.modules.outputs.setup_openssh_ufw }}" == "true" ]] || \
+             [[ "${{ steps.modules.outputs.setup_packages }}" == "true" ]] || \
+             [[ "${{ steps.modules.outputs.setup_nginx }}" == "true" ]] || \
+             [[ "${{ steps.modules.outputs.setup_certbot }}" == "true" ]] || \
+             [[ "${{ steps.modules.outputs.setup_code_server_system }}" == "true" ]] || \
+             [[ "${{ steps.modules.outputs.setup_postgres }}" == "true" ]]; then
             echo "has_system_modules=true" >> $GITHUB_OUTPUT
             echo "⚠️  Note: System setup modules require SUDO_ACCESS_USER to be configured"
             if [[ -z "${{ vars.SUDO_ACCESS_USER }}" && -z "${{ secrets.SUDO_ACCESS_USER }}" ]]; then
@@ -140,22 +177,22 @@ jobs:
         run: |
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
-          
+
           # Use cat with heredoc to safely write the key
           cat > ~/.ssh/deploy_key <<'SSHKEY_EOF'
           ${{ secrets.SERVER_SSH_KEY }}
           SSHKEY_EOF
-          
+
           # Ensure proper line ending
           echo "" >> ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          
+
           # Verify key format
           if ! ssh-keygen -l -f ~/.ssh/deploy_key >/dev/null 2>&1; then
             echo "❌ Error: Invalid SSH key format"
             exit 1
           fi
-          
+
           ssh-keyscan -p ${{ inputs.server_port }} -H ${{ inputs.server_host }} >> ~/.ssh/known_hosts 2>/dev/null || true
 
       - name: Determine SSH user
@@ -166,7 +203,7 @@ jobs:
           if [[ -z "$SUDO_USER" ]]; then
             SUDO_USER="${{ vars.SUDO_ACCESS_USER }}"
           fi
-          
+
           # For initial connection, use SUDO_ACCESS_USER if any system setup is needed
           if [[ "${{ steps.validate.outputs.has_system_modules }}" == "true" ]] && [[ -n "$SUDO_USER" ]]; then
             echo "ssh_user=$SUDO_USER" >> $GITHUB_OUTPUT
@@ -255,13 +292,7 @@ jobs:
             ${{ steps.ssh_user.outputs.ssh_user }}@${{ inputs.server_host }}:/tmp/
 
       - name: Initial system update
-        if: |
-          inputs.setup_openssh_ufw == true ||
-          inputs.setup_packages == true ||
-          inputs.setup_nginx == true ||
-          inputs.setup_certbot == true ||
-          inputs.setup_code_server_system == true ||
-          inputs.setup_postgres == true
+        if: steps.validate.outputs.has_system_modules == 'true'
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ steps.ssh_user.outputs.ssh_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
@@ -277,7 +308,7 @@ jobs:
           ENDSSH
 
       - name: Setup OpenSSH and UFW
-        if: inputs.setup_openssh_ufw == true
+        if: steps.modules.outputs.setup_openssh_ufw == 'true'
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ steps.ssh_user.outputs.ssh_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
@@ -292,7 +323,7 @@ jobs:
           ENDSSH
 
       - name: Setup necessary packages
-        if: inputs.setup_packages == true
+        if: steps.modules.outputs.setup_packages == 'true'
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ steps.ssh_user.outputs.ssh_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
@@ -307,7 +338,7 @@ jobs:
           ENDSSH
 
       - name: Setup Nginx
-        if: inputs.setup_nginx == true
+        if: steps.modules.outputs.setup_nginx == 'true'
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ steps.ssh_user.outputs.ssh_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
@@ -322,7 +353,7 @@ jobs:
           ENDSSH
 
       - name: Setup Certbot
-        if: inputs.setup_certbot == true
+        if: steps.modules.outputs.setup_certbot == 'true'
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ steps.ssh_user.outputs.ssh_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
@@ -337,7 +368,7 @@ jobs:
           ENDSSH
 
       - name: Setup code-server (system-wide)
-        if: inputs.setup_code_server_system == true
+        if: steps.modules.outputs.setup_code_server_system == 'true'
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ steps.ssh_user.outputs.ssh_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
@@ -352,7 +383,7 @@ jobs:
           ENDSSH
 
       - name: Setup PostgreSQL
-        if: inputs.setup_postgres == true
+        if: steps.modules.outputs.setup_postgres == 'true'
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ steps.ssh_user.outputs.ssh_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
@@ -367,7 +398,7 @@ jobs:
           ENDSSH
 
       - name: Setup code-server for user
-        if: inputs.setup_code_server_user == true
+        if: steps.modules.outputs.setup_code_server_user == 'true'
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ inputs.target_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
@@ -382,7 +413,7 @@ jobs:
           ENDSSH
 
       - name: Setup uv Python manager
-        if: inputs.setup_uv == true
+        if: steps.modules.outputs.setup_uv == 'true'
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ inputs.target_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
@@ -394,7 +425,7 @@ jobs:
           ENDSSH
 
       - name: Setup nvm Node.js manager
-        if: inputs.setup_nvm == true
+        if: steps.modules.outputs.setup_nvm == 'true'
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ inputs.target_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
@@ -408,7 +439,7 @@ jobs:
           ENDSSH
 
       - name: Setup repos directory
-        if: inputs.setup_repos_dir == true
+        if: steps.modules.outputs.setup_repos_dir == 'true'
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ inputs.target_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
@@ -420,7 +451,7 @@ jobs:
           ENDSSH
 
       - name: Setup Git and SSH
-        if: inputs.setup_git_ssh == true
+        if: steps.modules.outputs.setup_git_ssh == 'true'
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ inputs.target_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
@@ -435,7 +466,7 @@ jobs:
           ENDSSH
 
       - name: Enable code-server service
-        if: inputs.setup_code_server_user == true
+        if: steps.modules.outputs.setup_code_server_user == 'true'
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ inputs.target_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
@@ -479,7 +510,7 @@ jobs:
           ENDSSH
 
       - name: Retrieve setup credentials
-        if: inputs.setup_code_server_user == true || inputs.setup_git_ssh == true
+        if: steps.modules.outputs.setup_code_server_user == 'true' || steps.modules.outputs.setup_git_ssh == 'true'
         id: credentials
         run: |
           TEMP_DIR=$(mktemp -d)
@@ -507,7 +538,7 @@ jobs:
           PORT=""
           PASSWORD=""
           SSH_KEY=""
-          
+
           while IFS= read -r line; do
             if [[ "$line" =~ ^CODE_SERVER_PORT= ]]; then
               PORT=${line#*=}
@@ -527,15 +558,15 @@ jobs:
           done < "$TEMP_DIR/output"
 
           # Validate we got the expected credentials
-          if [[ "${{ inputs.setup_code_server_user }}" == "true" ]]; then
+          if [[ "${{ steps.modules.outputs.setup_code_server_user }}" == "true" ]]; then
             if [[ -z "$PORT" || -z "$PASSWORD" ]]; then
               echo "::error::Failed to retrieve code-server credentials"
               echo "::error::Port: $PORT, Password: ${PASSWORD:+[set]}"
               exit 1
             fi
           fi
-          
-          if [[ "${{ inputs.setup_git_ssh }}" == "true" ]]; then
+
+          if [[ "${{ steps.modules.outputs.setup_git_ssh }}" == "true" ]]; then
             if [[ -z "$SSH_KEY" ]]; then
               echo "::error::Failed to retrieve SSH public key"
               exit 1
@@ -545,23 +576,26 @@ jobs:
           rm -rf "$TEMP_DIR"
 
       - name: Display setup summary
-        if: inputs.setup_code_server_user == true || inputs.setup_git_ssh == true
+        if: steps.modules.outputs.setup_code_server_user == 'true' || steps.modules.outputs.setup_git_ssh == 'true'
         run: |
           echo "## ✅ Setup Completed Successfully!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📋 Profile Used" >> $GITHUB_STEP_SUMMARY
+          echo "- **Profile:** ${{ inputs.setup_profile }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 👤 Configured User" >> $GITHUB_STEP_SUMMARY
           echo "- **User:** ${{ inputs.target_user }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
-          if [[ "${{ inputs.setup_code_server_user }}" == "true" ]]; then
+
+          if [[ "${{ steps.modules.outputs.setup_code_server_user }}" == "true" ]]; then
             echo "### 📋 Code Server Configuration" >> $GITHUB_STEP_SUMMARY
             echo "- **Port:** ${{ steps.credentials.outputs.port }}" >> $GITHUB_STEP_SUMMARY
             echo "- **Password:** \`${{ steps.credentials.outputs.password }}\`" >> $GITHUB_STEP_SUMMARY
             echo "- **Access URL:** \`http://${{ inputs.server_host }}:${{ steps.credentials.outputs.port }}\`" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
           fi
-          
-          if [[ "${{ inputs.setup_git_ssh }}" == "true" ]]; then
+
+          if [[ "${{ steps.modules.outputs.setup_git_ssh }}" == "true" ]]; then
             echo "### 🔑 SSH Public Key" >> $GITHUB_STEP_SUMMARY
             echo "Add this to your Git hosting service (GitHub/GitLab/etc.):" >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
@@ -569,13 +603,13 @@ jobs:
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           echo "### ⚠️ Important Notes" >> $GITHUB_STEP_SUMMARY
-          if [[ "${{ inputs.setup_code_server_user }}" == "true" ]]; then
+          if [[ "${{ steps.modules.outputs.setup_code_server_user }}" == "true" ]]; then
             echo "- Save the code-server password in a secure location" >> $GITHUB_STEP_SUMMARY
             echo "- If code-server service wasn't enabled, run: \`sudo systemctl enable --now code-server@${{ inputs.target_user }}\`" >> $GITHUB_STEP_SUMMARY
           fi
-          if [[ "${{ inputs.setup_git_ssh }}" == "true" ]]; then
+          if [[ "${{ steps.modules.outputs.setup_git_ssh }}" == "true" ]]; then
             echo "- The SSH private key remains on the server at \`~${{ inputs.target_user }}/.ssh/id_ed25519\`" >> $GITHUB_STEP_SUMMARY
           fi
 

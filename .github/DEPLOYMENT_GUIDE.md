@@ -33,7 +33,7 @@ This guide explains how to use the GitHub Actions workflow to automatically depl
    ```bash
    # Copy public key to your server
    ssh-copy-id -i ~/.ssh/foundry_deploy.pub ubuntu@your-server-ip
-   
+
    # Or manually:
    cat ~/.ssh/foundry_deploy.pub | ssh ubuntu@your-server-ip "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"
    ```
@@ -47,12 +47,14 @@ This guide explains how to use the GitHub Actions workflow to automatically depl
 ### Step 2: Configure SUDO_ACCESS_USER
 
 Add the username of your sudo user:
+
 - Go to: **Settings** → **Secrets and variables** → **Actions** → **Variables** (or **Secrets** for more security)
 - Click **New repository variable** (or **New repository secret**)
 - Name: `SUDO_ACCESS_USER`
 - Value: `ubuntu` (or `root`, or your sudo username)
 
 **Important:** This user must:
+
 - Already exist on the server
 - Have passwordless sudo access
 - Have SSH access with the `SERVER_SSH_KEY` you configured in Step 1
@@ -70,29 +72,22 @@ See [VARIABLES.md](VARIABLES.md) for available variables like `NVM_VERSION`, `CO
 
    **Required inputs:**
    - **Server host**: Your server IP or hostname
+   - **Server port**: SSH port (default: 22)
    - **Target user**: The user to setup (will be created if doesn't exist)
+   - **Setup profile**: Choose from dropdown:
+     - **Full Development Server** - Complete setup with all modules
+     - **System Services Only** - Infrastructure only (Nginx, PostgreSQL, etc.)
+     - **User Tools Only** - Development tools for a specific user
+     - **Custom (use repository variables)** - Fine-grained control via variables
 
    **User creation options (if user doesn't exist):**
    - **Create user if missing**: Check to auto-create the user
    - **Make user sudo**: Check to give the new user passwordless sudo
    - **SSH public key**: Paste SSH public key to allow SSH login for new user (this is different from `SERVER_SSH_KEY`)
 
-   **System setup modules** (requires SUDO_ACCESS_USER):
-   - **Setup OpenSSH and UFW**: Configure firewall and SSH
-   - **Setup packages**: Install development packages
-   - **Setup Nginx**: Install and configure Nginx
-   - **Setup Certbot**: Install Certbot for SSL certificates
-   - **Setup code-server (system)**: Install code-server system-wide
-   - **Setup PostgreSQL**: Install PostgreSQL database
-
-   **User setup modules** (runs as target user):
-   - **Setup code-server (user)**: Configure code-server for the user
-   - **Setup uv**: Install uv Python package manager
-   - **Setup nvm**: Install nvm Node.js version manager
-   - **Setup repos directory**: Create ~/repos directory
-   - **Setup Git and SSH**: Configure git and generate SSH keys
-   - **Git user name**: Required if setting up Git
-   - **Git user email**: Required if setting up Git
+   **Git configuration (required for profiles with user tools):**
+   - **Git user name**: Required for profiles that include Git/SSH setup
+   - **Git user email**: Required for profiles that include Git/SSH setup
 
 5. Click **Run workflow**
 
@@ -152,12 +147,14 @@ This is a common source of confusion, so let's clarify:
 ### Common Scenarios
 
 **Scenario A: Setup everything as existing ubuntu user**
+
 - SUDO_ACCESS_USER: `ubuntu`
 - target_user: `ubuntu`
 - Create user: ❌ No
 - Result: Ubuntu user gets all tools installed
 
 **Scenario B: Create new developer user**
+
 - SUDO_ACCESS_USER: `ubuntu`
 - target_user: `developer`
 - Create user: ✅ Yes
@@ -165,6 +162,7 @@ This is a common source of confusion, so let's clarify:
 - Result: New `developer` user created, ubuntu user still used for system operations
 
 **Scenario C: User-only setup on existing server**
+
 - SUDO_ACCESS_USER: (not needed)
 - target_user: `developer`
 - System modules: ❌ None
@@ -226,7 +224,7 @@ Install system-wide tools without user-specific configuration:
 
 ```yaml
 Server host: 192.168.1.100
-Target user: ubuntu  # or any existing user
+Target user: ubuntu # or any existing user
 
 # System modules only
 Setup OpenSSH and UFW: ✓
@@ -257,19 +255,46 @@ Server host: 192.168.1.100
 Target user: developer
 
 # Only check the new tool you want to add
-Setup nvm: ✓  # Adds nvm if not already installed
+Setup nvm: ✓ # Adds nvm if not already installed
 ```
 
 ## Understanding the Workflow
 
+### Setup Profiles
+
+The workflow uses **profiles** to simplify configuration:
+
+1. **Full Development Server**
+   - All system modules: OpenSSH/UFW, Packages, Nginx, Certbot, Code-server, PostgreSQL
+   - All user modules: Code-server config, uv, nvm, repos, Git/SSH
+   - Requires: SUDO_ACCESS_USER, Git configuration
+
+2. **System Services Only**
+   - All system modules only
+   - No user modules
+   - Requires: SUDO_ACCESS_USER
+
+3. **User Tools Only**
+   - All user modules only
+   - No system modules
+   - Requires: Git configuration
+   - Does NOT require SUDO_ACCESS_USER
+
+4. **Custom (use repository variables)**
+   - Uses repository variables to control each module individually
+   - Variables: `SETUP_OPENSSH_UFW`, `SETUP_PACKAGES`, `SETUP_NGINX`, etc.
+   - See [VARIABLES.md](VARIABLES.md) for full list
+
 ### Module Types
 
 **System Modules**: Require `SUDO_ACCESS_USER` to be configured. These install system-wide tools and services:
+
 - Run with sudo privileges
 - Installed for all users
 - Examples: Nginx, PostgreSQL, system packages
 
 **User Modules**: Run as the target user. These configure user-specific tools:
+
 - No sudo required
 - Configured per user
 - Examples: code-server config, nvm, uv, Git config
@@ -277,6 +302,7 @@ Setup nvm: ✓  # Adds nvm if not already installed
 ### Idempotency
 
 All modules check if their components are already installed/configured before making changes. This means:
+
 - Safe to run multiple times
 - Won't duplicate configurations
 - Won't break existing setups
@@ -378,36 +404,36 @@ Re-run workflow with specific modules to update:
 
 ## Security Best Practices
 
-1. **SSH Keys**: 
+1. **SSH Keys**:
    - Use dedicated keys for deployments, not your personal keys
    - Consider using passphrase-protected keys
    - Regularly rotate deployment keys
    - Use different keys for different environments
 
-2. **Secrets Management**: 
+2. **Secrets Management**:
    - Use GitHub Secrets for sensitive data
    - Never commit private keys or passwords to git
    - Use environment-specific secrets when possible
 
-3. **SUDO_ACCESS_USER**: 
+3. **SUDO_ACCESS_USER**:
    - Consider using a dedicated deployment user
    - Limit sudo permissions where possible
    - Regularly audit sudo access
 
-4. **Limited Access**: 
+4. **Limited Access**:
    - Create deployment users with minimal required permissions
    - Use principle of least privilege
 
-5. **Audit Logs**: 
+5. **Audit Logs**:
    - Review workflow runs regularly
    - Monitor failed authentication attempts on servers
    - Keep server logs for security review
 
-6. **Branch Protection**: 
+6. **Branch Protection**:
    - Protect main branch to prevent unauthorized workflow changes
    - Require pull request reviews for workflow modifications
 
-7. **Key Rotation**: 
+7. **Key Rotation**:
    - Regularly rotate SSH keys and update secrets
    - Remove old keys from authorized_keys
    - Update GitHub Secrets after rotation
