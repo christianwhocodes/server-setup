@@ -1,6 +1,6 @@
 # 🏗️ Foundry
 
-Automated setup bash scripts for a remote Linux (Ubuntu) server.
+Linux (Ubuntu) server-setup bash scripts for automation.
 
 ## 📋 Requirements
 
