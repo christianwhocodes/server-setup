@@ -263,14 +263,12 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ steps.ssh_user.outputs.ssh_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
-            source /tmp/system.sh
             
             echo "🚀 Setting up OpenSSH and UFW..."
             if [[ $EUID -eq 0 ]]; then
-              openssh_setup
+              source /tmp/system.sh && openssh_setup
             elif command -v sudo >/dev/null 2>&1; then
-              export -f openssh_setup
-              sudo bash -c "$(declare -f openssh_setup); openssh_setup"
+              sudo bash -c "source /tmp/system.sh && openssh_setup"
             fi
             echo "✅ OpenSSH and UFW setup completed"
           ENDSSH
@@ -280,14 +278,12 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ steps.ssh_user.outputs.ssh_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
-            source /tmp/system.sh
             
             echo "🚀 Installing necessary packages..."
             if [[ $EUID -eq 0 ]]; then
-              necessary_packages_setup
+              source /tmp/system.sh && necessary_packages_setup
             elif command -v sudo >/dev/null 2>&1; then
-              export -f necessary_packages_setup
-              sudo bash -c "$(declare -f necessary_packages_setup); necessary_packages_setup"
+              sudo bash -c "source /tmp/system.sh && necessary_packages_setup"
             fi
             echo "✅ Necessary packages setup completed"
           ENDSSH
@@ -297,14 +293,12 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ steps.ssh_user.outputs.ssh_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
-            source /tmp/system.sh
             
             echo "🚀 Setting up Nginx..."
             if [[ $EUID -eq 0 ]]; then
-              nginx_setup
+              source /tmp/system.sh && nginx_setup
             elif command -v sudo >/dev/null 2>&1; then
-              export -f nginx_setup
-              sudo bash -c "$(declare -f nginx_setup); nginx_setup"
+              sudo bash -c "source /tmp/system.sh && nginx_setup"
             fi
             echo "✅ Nginx setup completed"
           ENDSSH
@@ -314,14 +308,12 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ steps.ssh_user.outputs.ssh_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
-            source /tmp/system.sh
             
             echo "🚀 Setting up Certbot..."
             if [[ $EUID -eq 0 ]]; then
-              certbot_setup
+              source /tmp/system.sh && certbot_setup
             elif command -v sudo >/dev/null 2>&1; then
-              export -f certbot_setup
-              sudo bash -c "$(declare -f certbot_setup); certbot_setup"
+              sudo bash -c "source /tmp/system.sh && certbot_setup"
             fi
             echo "✅ Certbot setup completed"
           ENDSSH
@@ -331,14 +323,12 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ steps.ssh_user.outputs.ssh_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
-            source /tmp/system.sh
             
             echo "🚀 Setting up code-server system-wide..."
             if [[ $EUID -eq 0 ]]; then
-              code_server_setup
+              source /tmp/system.sh && code_server_setup
             elif command -v sudo >/dev/null 2>&1; then
-              export -f code_server_setup
-              sudo bash -c "$(declare -f code_server_setup); code_server_setup"
+              sudo bash -c "source /tmp/system.sh && code_server_setup"
             fi
             echo "✅ code-server system setup completed"
           ENDSSH
@@ -348,14 +338,12 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ steps.ssh_user.outputs.ssh_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
-            source /tmp/system.sh
             
             echo "🚀 Setting up PostgreSQL..."
             if [[ $EUID -eq 0 ]]; then
-              postgres_setup
+              source /tmp/system.sh && postgres_setup
             elif command -v sudo >/dev/null 2>&1; then
-              export -f postgres_setup
-              sudo bash -c "$(declare -f postgres_setup); postgres_setup"
+              sudo bash -c "source /tmp/system.sh && postgres_setup"
             fi
             echo "✅ PostgreSQL setup completed"
           ENDSSH
