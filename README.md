@@ -1,20 +1,33 @@
 # 🏗️ Foundry
 
-Linux (Ubuntu) server-setup bash scripts for automation.
+Automatically setup your Linux server with development tools and services!
 
 ## 📋 Requirements
 
-- Fresh Ubuntu server (tested on Ubuntu 24.04)
+- Fresh Linux server (tested on Ubuntu 24.04)
 - Root or sudo access (for system setup)
 - Internet connection
 
----
+## 🚀 Setup Options
 
-## 🚀 Automated Deployment with GitHub Actions
+You can set up your server in two ways:
 
-You can now automatically deploy the setup scripts to your server using GitHub Actions! This eliminates the need to manually copy and paste scripts into your terminal.
+1. **Automated Deployment** - Use GitHub Actions to deploy remotely (Recommended)
+2. **Manual Setup** - Run scripts directly on your server via SSH
 
-### 📚 Prerequisites for Automated Deployment
+## 🤖 Automated Deployment with GitHub Actions
+
+Deploy and configure your server automatically using GitHub Actions - no manual SSH required!
+
+### 🎯 Benefits
+
+- ✅ No manual copy-pasting of scripts
+- ✅ Consistent deployments across multiple servers
+- ✅ Version-controlled configuration
+- ✅ Easy to customize with repository variables
+- ✅ Audit trail of all deployments
+
+### 📚 Prerequisites
 
 1. **Server SSH Key**: Generate an SSH key pair for server access
 2. **GitHub Repository**: Fork this repository or use your own
@@ -34,14 +47,14 @@ Navigate to your repository's **Settings** → **Secrets and variables** → **A
 
 Navigate to **Settings** → **Secrets and variables** → **Actions** → **Variables** tab → **New repository variable**:
 
-| Variable Name | Description | Default Value |
-|---------------|-------------|---------------|
-| `FOUNDRY_REPO_OWNER` | Repository owner name | `christianwhocodes` |
-| `FOUNDRY_REPO_NAME` | Repository name | `foundry` |
-| `FOUNDRY_REPO_BRANCH` | Branch to use | `main` |
-| `NVM_VERSION` | Node Version Manager version | `v0.40.3` |
-| `CODE_SERVER_PORT_START` | Code server port range start | `8080` |
-| `CODE_SERVER_PORT_END` | Code server port range end | `8100` |
+| Variable Name            | Description                  | Default Value       |
+| ------------------------ | ---------------------------- | ------------------- |
+| `REPO_OWNER`             | Repository owner name        | `christianwhocodes` |
+| `REPO_NAME`              | Repository name              | `foundry`           |
+| `REPO_BRANCH`            | Branch to use                | `main`              |
+| `NVM_VERSION`            | Node Version Manager version | `v0.40.3`           |
+| `CODE_SERVER_PORT_START` | Code server port range start | `8080`              |
+| `CODE_SERVER_PORT_END`   | Code server port range end   | `8100`              |
 
 #### 3. Run the Workflow
 
@@ -57,23 +70,16 @@ Navigate to **Settings** → **Secrets and variables** → **Actions** → **Var
 4. Click **Run workflow**
 
 The workflow will:
+
 - Connect to your server via SSH
 - Run the appropriate setup scripts
 - Display post-setup instructions
 
-### 🎯 Benefits of Automated Deployment
-
-- ✅ No manual copy-pasting of scripts
-- ✅ Consistent deployments across multiple servers
-- ✅ Version-controlled configuration
-- ✅ Easy to customize with repository variables
-- ✅ Audit trail of all deployments
-
 ---
 
-## 🌍 Global Setup _(sudo required)_
+## 🌍 Manual Setup: Global (System) Setup
 
-Automated system setup bash script for a remote Linux (Ubuntu) server.
+Automated system setup bash script for a remote Linux (Ubuntu) server _(sudo required)_.
 
 ### ✨ What Global Setup Does
 
@@ -105,7 +111,7 @@ sudo ufw allow OpenSSH
 sudo ufw enable
 ```
 
-### 🚀 Global Quick Setup
+### 🚀 Quick Setup
 
 **Step 1:** Run this single command on your fresh Ubuntu server to automatically configure everything:
 
@@ -124,17 +130,17 @@ source ~/.bashrc && exec /bin/bash
 If you've forked this repository or want to use a different branch, you can set environment variables:
 
 ```bash
-export FOUNDRY_REPO_OWNER="your-github-username"
-export FOUNDRY_REPO_NAME="foundry"
-export FOUNDRY_REPO_BRANCH="main"
-bash -c "$(curl -sSL https://raw.githubusercontent.com/${FOUNDRY_REPO_OWNER}/${FOUNDRY_REPO_NAME}/${FOUNDRY_REPO_BRANCH}/system/setup.sh)"
+export REPO_OWNER="your-github-username"
+export REPO_NAME="foundry"
+export REPO_BRANCH="main"
+bash -c "$(curl -sSL https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/${REPO_BRANCH}/system/setup.sh)"
 ```
 
 ---
 
-## 👤 User Setup _(non-sudo)_
+## 👤 Manual Setup: User Setup
 
-Automated user setup bash script for a remote Linux (Ubuntu) server.
+Automated user setup bash script for a remote Linux (Ubuntu) server _(non-sudo)_.
 
 ### ✨ What User Setup Does
 
@@ -145,7 +151,7 @@ Automated user setup bash script for a remote Linux (Ubuntu) server.
 - ⚙️ Configures Git global user name and email
 - 🔑 Generates and configures SSH key (id_ed25519)
 
-### 📚 User Prerequisites
+### 📚 Prerequisites
 
 To create a new user, login as root or a user with sudo privileges, then follow the steps below:
 
@@ -167,7 +173,7 @@ _(Optional)_ Allow the user to login via passwordless (ssh-key) ssh:
 sudo rsync --archive --chown=developer:developer ~/.ssh /home/developer
 ```
 
-### 🚀 User Quick Setup
+### 🚀 Quick Setup
 
 Login as the new user:
 
@@ -204,15 +210,15 @@ export GIT_USER_NAME="John Doe"
 export GIT_USER_EMAIL="john@example.com"
 
 # Optional customizations
-export FOUNDRY_REPO_OWNER="your-github-username"
-export FOUNDRY_REPO_NAME="foundry"
-export FOUNDRY_REPO_BRANCH="main"
+export REPO_OWNER="your-github-username"
+export REPO_NAME="foundry"
+export REPO_BRANCH="main"
 export NVM_VERSION="v0.40.3"
 export CODE_SERVER_PORT_START="8080"
 export CODE_SERVER_PORT_END="8100"
 
 # Run the setup
-bash -c "$(curl -sSL https://raw.githubusercontent.com/${FOUNDRY_REPO_OWNER:-christianwhocodes}/${FOUNDRY_REPO_NAME:-foundry}/${FOUNDRY_REPO_BRANCH:-main}/user/setup.sh)"
+bash -c "$(curl -sSL https://raw.githubusercontent.com/${REPO_OWNER:-christianwhocodes}/${REPO_NAME:-foundry}/${REPO_BRANCH:-main}/user/setup.sh)"
 ```
 
 **Step 3 (Optional):** Install Node.js, Python, and global packages:
@@ -225,11 +231,11 @@ uv python install
 
 ---
 
-## 👤 Post User Setup _(sudo required)_
+## 🔐 Manual Setup: Post User Setup
 
-After completing the user setup, a sudo user or administrator must enable and start the code-server service for the new user.
+After completing the user setup, a sudo user or administrator must enable and start the code-server service for the new user _(sudo required)_.
 
-### 🔐 Enable Code Server Service
+### Enable Code Server Service
 
 Login as root or a user with sudo privileges, then run:
 
