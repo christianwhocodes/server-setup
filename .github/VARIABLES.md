@@ -171,7 +171,7 @@ Control which user-level tools to install (no sudo required):
 - **Description:** Setup Git configuration and SSH keys
 - **Type:** Boolean (`true` or `false`)
 - **Default:** `false`
-- **Requires:** Git user name and email to be provided in workflow inputs
+- **Requires:** Git user name and email must be provided in workflow inputs when this is enabled
 - **Creates:** ed25519 SSH key pair for Git operations
 
 ---

@@ -86,8 +86,8 @@ See [VARIABLES.md](VARIABLES.md) for available variables like `NVM_VERSION`, `CO
    - **SSH public key**: Paste SSH public key to allow SSH login for new user (this is different from `SERVER_SSH_KEY`)
 
    **Git configuration (required for profiles with user tools):**
-   - **Git user name**: Required for profiles that include Git/SSH setup
-   - **Git user email**: Required for profiles that include Git/SSH setup
+   - **Git user name**: Required if Git/SSH setup is enabled in the selected profile
+   - **Git user email**: Required if Git/SSH setup is enabled in the selected profile
 
 5. Click **Run workflow**
 
@@ -200,6 +200,8 @@ Git user name: John Doe
 Git user email: john@example.com
 ```
 
+**Note:** Git credentials are only required because this profile includes Git/SSH setup.
+
 ### Scenario 2: Only User Setup for Existing User
 
 Just configure development tools for an existing user:
@@ -217,6 +219,8 @@ Setup Git and SSH: ✓
 Git user name: Jane Smith
 Git user email: jane@example.com
 ```
+
+**Note:** Git credentials are only required because Git/SSH setup is selected.
 
 ### Scenario 3: Only System Setup
 
@@ -245,6 +249,8 @@ Target user: developer
 # Only code-server
 Setup code-server (user): ✓
 ```
+
+**Note:** Git credentials are NOT required for this scenario since Git/SSH setup is not enabled.
 
 ### Scenario 5: Re-run Setup (Idempotent)
 
@@ -375,6 +381,16 @@ All modules check if their components are already installed/configured before ma
 2. Verify config files were created: `ls -la ~/.config/code-server/`
 3. Check SSH key was generated: `ls -la ~/.ssh/id_ed25519*`
 4. Review the "Retrieve setup credentials" step logs
+
+### Git Configuration Errors
+
+**Problem:** Error about missing git_user_name or git_user_email
+
+**Solutions:**
+
+1. Verify that your selected profile or custom configuration includes Git/SSH setup
+2. If Git/SSH setup is enabled, both git_user_name and git_user_email are required
+3. If you don't need Git/SSH setup, choose a profile or custom configuration that doesn't include it
 
 ## Advanced Usage
 

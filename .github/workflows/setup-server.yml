@@ -3,7 +3,7 @@ name: Setup Server
 on:
   workflow_dispatch:
     inputs:
-      # GitHub Actions has a limit of 10 inputs for workflow_dispatch events
+      # Server Connection Settings
       server_host:
         description: "Server IP address or hostname"
         required: true
@@ -13,10 +13,21 @@ on:
         required: false
         type: string
         default: "22"
+      # User Configuration
       target_user:
         description: "Target user to setup (will be created if doesn't exist)"
         required: true
         type: string
+      make_user_sudo:
+        description: "Grant user passwordless sudo privileges (applies to both new and existing users)"
+        required: false
+        type: boolean
+        default: false
+      ssh_public_key:
+        description: "SSH public key to add to authorized_keys for the target user"
+        required: false
+        type: string
+      # Setup Configuration
       setup_profile:
         description: "Setup profile to use"
         required: true
@@ -27,20 +38,7 @@ on:
           - "User Tools Only"
           - "Custom (use repository variables)"
         default: "Full Development Server"
-      create_user_if_missing:
-        description: "Create user if it doesn't exist"
-        required: false
-        type: boolean
-        default: true
-      make_user_sudo:
-        description: "Make new user a sudo user (only when creating new user)"
-        required: false
-        type: boolean
-        default: false
-      ssh_public_key:
-        description: "SSH public key to add to authorized_keys (only when creating new user)"
-        required: false
-        type: string
+      # Tool-Specific Settings
       git_user_name:
         description: "Git user name (required for user tools)"
         required: false
@@ -195,103 +193,101 @@ jobs:
 
           ssh-keyscan -p ${{ inputs.server_port }} -H ${{ inputs.server_host }} >> ~/.ssh/known_hosts 2>/dev/null || true
 
-      - name: Determine SSH user
-        id: ssh_user
-        run: |
-          # Use SUDO_ACCESS_USER if available, otherwise use target_user
-          SUDO_USER="${{ secrets.SUDO_ACCESS_USER }}"
-
-          # For initial connection, use SUDO_ACCESS_USER if any system setup is needed
-          if [[ "${{ steps.validate.outputs.has_system_modules }}" == "true" ]] && [[ -n "$SUDO_USER" ]]; then
-            echo "ssh_user=$SUDO_USER" >> $GITHUB_OUTPUT
-            echo "Using SUDO_ACCESS_USER: $SUDO_USER"
-          else
-            echo "ssh_user=${{ inputs.target_user }}" >> $GITHUB_OUTPUT
-            echo "Using target user: ${{ inputs.target_user }}"
-          fi
-
       - name: Test SSH connection
         run: |
-          if ! ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new ${{ steps.ssh_user.outputs.ssh_user }}@${{ inputs.server_host }} "echo 'SSH connection successful'"; then
+          # Determine which user to connect as for system operations
+          if [[ "${{ steps.validate.outputs.has_system_modules }}" == "true" ]]; then
+            SSH_USER="${{ secrets.SUDO_ACCESS_USER }}"
+          else
+            SSH_USER="${{ inputs.target_user }}"
+          fi
+
+          if ! ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new ${SSH_USER}@${{ inputs.server_host }} "echo 'SSH connection successful'"; then
             echo "❌ Failed to establish SSH connection"
             exit 1
           fi
 
-      - name: Create target user if needed
-        if: inputs.create_user_if_missing == true
+      - name: Create or Update target user
         run: |
-          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ steps.ssh_user.outputs.ssh_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
+          # Connect as sudo user if system modules are enabled, otherwise as target user
+          if [[ "${{ steps.validate.outputs.has_system_modules }}" == "true" ]]; then
+            SSH_USER="${{ secrets.SUDO_ACCESS_USER }}"
+          else
+            SSH_USER="${{ inputs.target_user }}"
+          fi
+
+          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${SSH_USER}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
-            
+
             TARGET_USER="${{ inputs.target_user }}"
             MAKE_SUDO="${{ inputs.make_user_sudo }}"
             SSH_PUB_KEY="${{ inputs.ssh_public_key }}"
-            
-            # Check if user exists
+
+            run_as_sudo() {
+              if [[ $EUID -eq 0 ]]; then
+                "$@"
+              elif command -v sudo >/dev/null 2>&1; then
+                sudo "$@"
+              else
+                echo "❌ Error: Need root or sudo permissions"
+                exit 1
+              fi
+            }
+
+            # Check if user exists, create if not
             if id "$TARGET_USER" &>/dev/null; then
               echo "✅ User $TARGET_USER already exists"
-              exit 0
-            fi
-            
-            echo "🔧 Creating user: $TARGET_USER"
-            
-            # Create user with home directory
-            if [[ $EUID -eq 0 ]]; then
-              useradd -m -s /bin/bash "$TARGET_USER"
-            elif command -v sudo >/dev/null 2>&1; then
-              sudo useradd -m -s /bin/bash "$TARGET_USER"
             else
-              echo "❌ Error: Need root or sudo to create user"
-              exit 1
+              echo "🔧 Creating user: $TARGET_USER"
+              run_as_sudo useradd -m -s /bin/bash "$TARGET_USER"
+              echo "✅ User $TARGET_USER created successfully"
             fi
-            
-            # Add to sudo group if requested
+
+            # Grant sudo access if requested
             if [[ "$MAKE_SUDO" == "true" ]]; then
-              echo "🔧 Adding $TARGET_USER to sudo group"
-              if [[ $EUID -eq 0 ]]; then
-                usermod -aG sudo "$TARGET_USER"
-                # Enable passwordless sudo
-                echo "$TARGET_USER ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/$TARGET_USER
-                chmod 440 /etc/sudoers.d/$TARGET_USER
-              elif command -v sudo >/dev/null 2>&1; then
-                sudo usermod -aG sudo "$TARGET_USER"
-                sudo bash -c "echo '$TARGET_USER ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/$TARGET_USER"
-                sudo chmod 440 /etc/sudoers.d/$TARGET_USER
-              fi
+              echo "🔧 Ensuring $TARGET_USER is a sudoer"
+              run_as_sudo usermod -aG sudo "$TARGET_USER"
+              # Enable passwordless sudo
+              echo "$TARGET_USER ALL=(ALL) NOPASSWD:ALL" | run_as_sudo tee "/etc/sudoers.d/$TARGET_USER" > /dev/null
+              run_as_sudo chmod 440 "/etc/sudoers.d/$TARGET_USER"
+              echo "✅ $TARGET_USER has sudo privileges"
             fi
-            
+
             # Add SSH public key if provided
             if [[ -n "$SSH_PUB_KEY" ]]; then
               echo "🔑 Adding SSH public key for $TARGET_USER"
               USER_HOME=$(eval echo ~$TARGET_USER)
-              if [[ $EUID -eq 0 ]]; then
-                mkdir -p "$USER_HOME/.ssh"
-                echo "$SSH_PUB_KEY" >> "$USER_HOME/.ssh/authorized_keys"
-                chmod 700 "$USER_HOME/.ssh"
-                chmod 600 "$USER_HOME/.ssh/authorized_keys"
-                chown -R "$TARGET_USER:$TARGET_USER" "$USER_HOME/.ssh"
-              elif command -v sudo >/dev/null 2>&1; then
-                sudo mkdir -p "$USER_HOME/.ssh"
-                sudo bash -c "echo '$SSH_PUB_KEY' >> '$USER_HOME/.ssh/authorized_keys'"
-                sudo chmod 700 "$USER_HOME/.ssh"
-                sudo chmod 600 "$USER_HOME/.ssh/authorized_keys"
-                sudo chown -R "$TARGET_USER:$TARGET_USER" "$USER_HOME/.ssh"
+              run_as_sudo mkdir -p "$USER_HOME/.ssh"
+              # Add key only if it's not already there
+              if ! run_as_sudo grep -qF "$SSH_PUB_KEY" "$USER_HOME/.ssh/authorized_keys" 2>/dev/null; then
+                run_as_sudo bash -c "echo '$SSH_PUB_KEY' >> '$USER_HOME/.ssh/authorized_keys'"
+                echo "✅ Public key added"
+              else
+                echo "✅ Public key already exists"
               fi
+              run_as_sudo chmod 700 "$USER_HOME/.ssh"
+              run_as_sudo chmod 600 "$USER_HOME/.ssh/authorized_keys"
+              run_as_sudo chown -R "$TARGET_USER:$TARGET_USER" "$USER_HOME/.ssh"
             fi
-            
-            echo "✅ User $TARGET_USER created successfully"
           ENDSSH
 
       - name: Upload scripts to server
         run: |
+          # Upload to sudo user's temp if system modules enabled, otherwise to target user
+          if [[ "${{ steps.validate.outputs.has_system_modules }}" == "true" ]]; then
+            SSH_USER="${{ secrets.SUDO_ACCESS_USER }}"
+          else
+            SSH_USER="${{ inputs.target_user }}"
+          fi
+
           scp -i ~/.ssh/deploy_key -P ${{ inputs.server_port }} \
             scripts/system.sh scripts/user.sh \
-            ${{ steps.ssh_user.outputs.ssh_user }}@${{ inputs.server_host }}:/tmp/
+            ${SSH_USER}@${{ inputs.server_host }}:/tmp/
 
       - name: Initial system update
         if: steps.validate.outputs.has_system_modules == 'true'
         run: |
-          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ steps.ssh_user.outputs.ssh_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
+          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ secrets.SUDO_ACCESS_USER }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
             echo "🔄 Running apt-get update..."
             if [[ $EUID -eq 0 ]]; then
@@ -307,7 +303,7 @@ jobs:
       - name: Setup OpenSSH and UFW
         if: steps.modules.outputs.setup_openssh_ufw == 'true'
         run: |
-          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ steps.ssh_user.outputs.ssh_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
+          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ secrets.SUDO_ACCESS_USER }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
             
             echo "🚀 Setting up OpenSSH and UFW..."
@@ -322,7 +318,7 @@ jobs:
       - name: Setup necessary packages
         if: steps.modules.outputs.setup_packages == 'true'
         run: |
-          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ steps.ssh_user.outputs.ssh_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
+          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ secrets.SUDO_ACCESS_USER }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
             
             echo "🚀 Installing necessary packages..."
@@ -337,7 +333,7 @@ jobs:
       - name: Setup Nginx
         if: steps.modules.outputs.setup_nginx == 'true'
         run: |
-          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ steps.ssh_user.outputs.ssh_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
+          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ secrets.SUDO_ACCESS_USER }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
             
             echo "🚀 Setting up Nginx..."
@@ -352,7 +348,7 @@ jobs:
       - name: Setup Certbot
         if: steps.modules.outputs.setup_certbot == 'true'
         run: |
-          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ steps.ssh_user.outputs.ssh_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
+          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ secrets.SUDO_ACCESS_USER }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
             
             echo "🚀 Setting up Certbot..."
@@ -367,7 +363,7 @@ jobs:
       - name: Setup code-server (system-wide)
         if: steps.modules.outputs.setup_code_server_system == 'true'
         run: |
-          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ steps.ssh_user.outputs.ssh_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
+          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ secrets.SUDO_ACCESS_USER }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
             
             echo "🚀 Setting up code-server system-wide..."
@@ -382,7 +378,7 @@ jobs:
       - name: Setup PostgreSQL
         if: steps.modules.outputs.setup_postgres == 'true'
         run: |
-          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ steps.ssh_user.outputs.ssh_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
+          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ secrets.SUDO_ACCESS_USER }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
             
             echo "🚀 Setting up PostgreSQL..."
@@ -401,10 +397,10 @@ jobs:
             set -e
             source /tmp/user.sh
             
-            export CODE_SERVER_PORT_START="${{ vars.CODE_SERVER_PORT_START || '8080' }}"
-            export CODE_SERVER_PORT_END="${{ vars.CODE_SERVER_PORT_END || '8100' }}"
+            export CODE_SERVER_PORT_START="${{ vars.CODE_SERVER_PORT_START }}"
+            export CODE_SERVER_PORT_END="${{ vars.CODE_SERVER_PORT_END }}"
             
-            echo "🚀 Setting up code-server for user..."
+            echo "🚀 Setting up code-server for user $(whoami)..."
             code_server_setup
             echo "✅ code-server user setup completed"
           ENDSSH
@@ -613,7 +609,14 @@ jobs:
       - name: Cleanup
         if: always()
         run: |
+          # Determine which user uploaded the scripts
+          if [[ "${{ steps.validate.outputs.has_system_modules }}" == "true" ]]; then
+            SSH_USER="${{ secrets.SUDO_ACCESS_USER }}"
+          else
+            SSH_USER="${{ inputs.target_user }}"
+          fi
+
           # Clean up remote scripts first (while SSH key still exists)
-          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ steps.ssh_user.outputs.ssh_user }}@${{ inputs.server_host }} "rm -f /tmp/system.sh /tmp/user.sh" 2>/dev/null || true
+          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${SSH_USER}@${{ inputs.server_host }} "rm -f /tmp/system.sh /tmp/user.sh" 2>/dev/null || true
           # Then clean up local deploy key
           rm -f ~/.ssh/deploy_key

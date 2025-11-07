@@ -158,9 +158,11 @@ Create a new user with complete development environment - **just select the prof
 
 ### 👤 Add User to Existing Server (Use Profile: "User Tools Only")
 
-Just user-level tools without touching system services - **select profile, no system configuration needed!**
+Just user-level tools without touching system services - **select profile, provide Git credentials for SSH key generation!**
 
 **Perfect for:** Adding a new developer to an already configured server
+
+**Note:** This profile includes Git/SSH setup, so git_user_name and git_user_email are required.
 
 ---
 
@@ -179,6 +181,7 @@ Install one specific module using custom variables:
 1. Go to repository **Variables**
 2. Set only the module you want (e.g., `SETUP_NVM=true`)
 3. Run workflow with "Custom (use repository variables)" profile
+4. If `SETUP_GIT_SSH=true`, provide git_user_name and git_user_email in workflow inputs
 
 **Perfect for:** Adding PostgreSQL to a server that already has Nginx, or adding nvm to a user who already has uv
 
@@ -223,9 +226,9 @@ Install one specific module using custom variables:
    - **Make user sudo**: Give new user passwordless sudo access
    - **SSH public key**: Add SSH key for passwordless login to new user
 
-5. Provide Git configuration (required for profiles with user tools):
-   - **Git user name**: Your name for Git commits
-   - **Git user email**: Your email for Git commits
+5. Provide Git configuration (required if Git/SSH setup is enabled):
+   - **Git user name**: Your name for Git commits (required when Git/SSH setup is part of the selected profile)
+   - **Git user email**: Your email for Git commits (required when Git/SSH setup is part of the selected profile)
 
 6. Click **Run workflow** and watch the magic happen!
 

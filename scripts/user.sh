@@ -56,6 +56,7 @@ generate_random_password() {
 }
 
 code_server_setup() {
+  # ? Is my setup really okay and idempotent?
   echo -e "${BLUE}Setting up code-server...${NC}"
 
   CODE_SERVER_PORT_START="${CODE_SERVER_PORT_START:-8080}"
@@ -65,16 +66,21 @@ code_server_setup() {
 
   # Check if config already exists
   if [ -f "$HOME/.config/code-server/config.yaml" ]; then
+    # if it does, get the existing port
     EXISTING_PORT=$(grep "bind-addr:" "$HOME/.config/code-server/config.yaml" | awk -F: '{print $NF}' | tr -d ' ')
     
-    # Check if existing port is still available
+    # Check if existing port is in use
     if [ -n "$EXISTING_PORT" ] && ! is_port_in_use "$EXISTING_PORT"; then
+      # if not in use (i.e., if code-server is not running), reuse the config
       echo -e "${GREEN}✅ Using existing code-server config on port $EXISTING_PORT${NC}"
       CODE_SERVER_PORT="$EXISTING_PORT"
-      # Don't extract password here to avoid exposing it in logs
+
+      # Don't proceed with the new setup, as config is already valid
       return 0
     fi
   fi
+
+  # Proceed with the new setup if no valid existing config found
 
   echo -e "${BLUE}Checking for available ports in range ${CODE_SERVER_PORT_START}-${CODE_SERVER_PORT_END}...${NC}"
   CODE_SERVER_PORT=$(find_available_port $CODE_SERVER_PORT_START $CODE_SERVER_PORT_END)
@@ -97,7 +103,7 @@ cert: false
 EOF
   chmod 600 "$HOME/.config/code-server/config.yaml"
   
-  echo -e "${GREEN}✅ code-server configuration created (password saved securely)${NC}"
+  echo -e "${GREEN}✅ code-server configuration created${NC}"
 }
 
 uv_setup() {
