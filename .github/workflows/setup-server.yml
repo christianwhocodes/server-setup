@@ -299,7 +299,6 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ secrets.SUDO_ACCESS_USER }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
-            SCRIPT_URL="https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/scripts/openssh-ufw.sh"
             echo "🚀 Setting up OpenSSH and UFW..."
             if [[ $EUID -eq 0 ]]; then
               bash /tmp/openssh-ufw.sh
@@ -314,7 +313,6 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ secrets.SUDO_ACCESS_USER }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
-            SCRIPT_URL="https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/scripts/packages.sh"
             echo "🚀 Installing necessary packages..."
             if [[ $EUID -eq 0 ]]; then
               bash /tmp/packages.sh
@@ -329,7 +327,6 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ secrets.SUDO_ACCESS_USER }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
-            SCRIPT_URL="https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/scripts/nginx.sh"
             echo "🚀 Setting up Nginx..."
             if [[ $EUID -eq 0 ]]; then
               bash /tmp/nginx.sh
@@ -344,7 +341,6 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ secrets.SUDO_ACCESS_USER }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
-            SCRIPT_URL="https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/scripts/certbot.sh"
             echo "🚀 Setting up Certbot..."
             if [[ $EUID -eq 0 ]]; then
               bash /tmp/certbot.sh
@@ -359,7 +355,6 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ secrets.SUDO_ACCESS_USER }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
-            SCRIPT_URL="https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/scripts/postgres.sh"
             echo "🚀 Setting up PostgreSQL..."
             if [[ $EUID -eq 0 ]]; then
               bash /tmp/postgres.sh
@@ -378,13 +373,12 @@ jobs:
             export TARGET_USER="${{ inputs.target_user }}"
             export CODE_SERVER_PORT_START="${{ vars.CODE_SERVER_PORT_START || '8080' }}"
             export CODE_SERVER_PORT_END="${{ vars.CODE_SERVER_PORT_END || '8100' }}"
-            SCRIPT_URL="https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/scripts/code-server.sh"
             
             echo "🚀 Setting up code-server (system + user config + service)..."
             if [[ $EUID -eq 0 ]]; then
               bash /tmp/code-server.sh
             elif command -v sudo >/dev/null 2>&1; then
-              sudo bash /tmp/code-server.sh
+              sudo TARGET_USER="$TARGET_USER" CODE_SERVER_PORT_START="$CODE_SERVER_PORT_START" CODE_SERVER_PORT_END="$CODE_SERVER_PORT_END" bash /tmp/code-server.sh
             fi
             echo "✅ Code-server setup completed"
           ENDSSH
@@ -394,7 +388,6 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ inputs.target_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
-            SCRIPT_URL="https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/scripts/uv.sh"
             echo "🚀 Setting up uv..."
             bash /tmp/uv.sh
             echo "✅ uv setup completed"
@@ -405,8 +398,7 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ inputs.target_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
-            NVM_VERSION="${{ vars.NVM_VERSION || 'v0.40.3' }}"
-            SCRIPT_URL="https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/scripts/nvm.sh"
+            export NVM_VERSION="${{ vars.NVM_VERSION || 'v0.40.3' }}"
             
             echo "🚀 Setting up nvm..."
             bash /tmp/nvm.sh
@@ -418,7 +410,6 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ inputs.target_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
-            SCRIPT_URL="https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/scripts/repos.sh"
             echo "🚀 Setting up repos directory..."
             bash /tmp/repos.sh
             echo "✅ repos directory setup completed"
@@ -431,7 +422,6 @@ jobs:
             set -e
             export GIT_USER_NAME="${{ inputs.git_user_name }}"
             export GIT_USER_EMAIL="${{ inputs.git_user_email }}"
-            SCRIPT_URL="https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/scripts/git-ssh.sh"
             
             echo "🚀 Setting up Git and SSH..."
             bash /tmp/git-ssh.sh

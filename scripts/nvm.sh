@@ -11,10 +11,11 @@ RED='\033[0;31m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
+# Required environment variable
+NVM_VERSION="${NVM_VERSION:?NVM_VERSION environment variable is required}"
+
 nvm_setup() {
   echo -e "${BLUE}Setting up nvm...${NC}"
-
-  NVM_VERSION="${NVM_VERSION:-v0.40.3}"
   
   # Check if nvm is already installed
   export NVM_DIR="$HOME/.nvm"
