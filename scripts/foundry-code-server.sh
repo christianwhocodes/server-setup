@@ -146,17 +146,15 @@ EOF
     echo -e "${GREEN}✅ code-server configuration created${NC}"
   fi
 
-  # Step 3: Set proper permissions (sudo user owns, target user can only read)
+  # Step 3: Set proper permissions (owned by target user)
   echo -e "${BLUE}Step 3: Setting permissions...${NC}"
     
-  # Set ownership of the config directory to the target user
+  # Set ownership of the config directory and files to the target user
   chown -R "$TARGET_USER":"$TARGET_USER" "$CONFIG_DIR"
-
-  # Set the config.yaml file to be owned by root and readable by the user
-  chown root:"$TARGET_USER" "$CONFIG_FILE"
-  chmod 640 "$CONFIG_FILE"
+  chmod 700 "$CONFIG_DIR"
+  chmod 600 "$CONFIG_FILE"
   
-  echo -e "${GREEN}✅ Permissions set (sudo user owns, target user can read)${NC}"
+  echo -e "${GREEN}✅ Permissions set (target user owns config)${NC}"
 
   # Step 4: Enable and start code-server service for target user
   echo -e "${BLUE}Step 4: Enabling code-server service for $TARGET_USER...${NC}"

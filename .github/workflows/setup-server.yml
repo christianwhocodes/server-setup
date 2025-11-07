@@ -512,8 +512,6 @@ jobs:
             echo "- **Password:** \`${{ steps.credentials.outputs.password }}\`" >> $GITHUB_STEP_SUMMARY
             echo "- **Access URL:** \`http://${{ inputs.server_host }}:${{ steps.credentials.outputs.port }}\`" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "⚠️ **Note:** Config file is owned by sudo user for security. Target user can read but not modify." >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
           fi
 
           if [[ "${{ steps.modules.outputs.setup_git_ssh }}" == "true" ]]; then

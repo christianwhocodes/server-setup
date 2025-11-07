@@ -388,47 +388,6 @@ All scripts are designed to be idempotent:
 
 Each script file in `scripts/` can be run independently and multiple times safely.
 
-## Code-Server Setup Details
-
-The code-server module (`scripts/foundry-code-server.sh`) performs a complete setup:
-
-### What It Does
-
-1. **System Installation**: Installs code-server globally if not present
-2. **User Configuration**: Creates config in `~/.config/code-server/` for target user
-3. **Security Setup**: Sets proper permissions for secure operation
-4. **Service Management**: Enables and starts `code-server@[target_user]` service
-
-### Security Features
-
-```bash
-# Config owned by sudo user (root)
-chown -R root:root ~/.config/code-server/
-chmod 755 ~/.config/code-server/
-chmod 600 config.yaml
-```
-
-**This means:**
-
-- ✅ Target user can **read** the config (required for code-server to run)
-- ❌ Target user **cannot modify** the config (password is protected)
-- ✅ Only sudo user can change the password or configuration
-
-### Service Management
-
-The service runs as the target user:
-
-```bash
-sudo systemctl enable --now code-server@[target_user]
-```
-
-You can manage it with:
-
-```bash
-sudo systemctl status code-server@[target_user]
-sudo systemctl restart code-server@[target_user]
-```
-
 ## Troubleshooting
 
 ### SSH Connection Failed
@@ -519,9 +478,9 @@ sudo systemctl restart code-server@[target_user]
 1. Check config file exists: `ls -la ~/.config/code-server/config.yaml`
 2. Verify permissions allow reading:
    ```bash
-   # Should show: drwxr-xr-x for directory
+   # Should show: drwx------ for directory, owned by target user
    ls -ld ~/.config/code-server/
-   # Should show: -rw------- and owned by root
+   # Should show: -rw------- and owned by target user
    ls -l ~/.config/code-server/config.yaml
    ```
 3. Check service status: `sudo systemctl status code-server@[target_user]`
@@ -581,27 +540,21 @@ Each script in `scripts/` is standalone and can be modified:
    - Limit sudo permissions where possible
    - Regularly audit sudo access
 
-4. **Code-Server Security**:
-   - Config owned by root protects password
-   - Target user cannot modify configuration
-   - Only administrators can change settings
-   - Service runs with appropriate user permissions
-
-5. **Limited Access**:
+4. **Limited Access**:
    - Create deployment users with minimal required permissions
    - Use principle of least privilege
 
-6. **Audit Logs**:
+5. **Audit Logs**:
    - Review workflow runs regularly
    - Monitor failed authentication attempts on servers
    - Keep server logs for security review
 
-7. **Branch Protection**:
+6. **Branch Protection**:
    - Protect main branch to prevent unauthorized workflow changes
    - Require pull request reviews for workflow modifications
    - Require pull request reviews for script changes
 
-8. **Key Rotation**:
+7. **Key Rotation**:
    - Regularly rotate SSH keys and update secrets
    - Remove old keys from authorized_keys
    - Update GitHub Secrets after rotation

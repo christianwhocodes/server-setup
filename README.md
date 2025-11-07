@@ -239,15 +239,6 @@ After the workflow completes, check the **Summary** tab for:
 2. **Access code-server** - Use the provided URL and password
 3. **Start developing!** - Your server is ready to use
 
-### 💻 Code-Server Security
-
-The code-server setup includes enhanced security:
-
-- Config file is owned by the sudo user (root)
-- Target user can read the config but cannot modify it
-- Password is protected from unauthorized changes
-- Service runs as the target user: `code-server@[target_user]`
-
 ## 📁 Repository Structure
 
 ```
