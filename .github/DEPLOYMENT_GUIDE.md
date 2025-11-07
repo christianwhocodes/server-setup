@@ -358,23 +358,23 @@ The workflow uses **profiles** to simplify configuration:
 
 **System Modules**: Require `SUDO_ACCESS_USER` to be configured:
 
-| Module        | Script File      | Description                            |
-| ------------- | ---------------- | -------------------------------------- |
-| OpenSSH & UFW | `openssh-ufw.sh` | Firewall and SSH configuration         |
-| Packages      | `packages.sh`    | Development tools and libraries        |
-| Nginx         | `nginx.sh`       | Web server with proxy configurations   |
-| Certbot       | `certbot.sh`     | SSL certificate management             |
-| Code Server   | `code-server.sh` | System install + user config + service |
-| PostgreSQL    | `postgres.sh`    | Database server                        |
+| Module        | Script File              | Description                            |
+| ------------- | ------------------------ | -------------------------------------- |
+| OpenSSH & UFW | `foundry-openssh-ufw.sh` | Firewall and SSH configuration         |
+| Packages      | `foundry-packages.sh`    | Development tools and libraries        |
+| Nginx         | `foundry-nginx.sh`       | Web server with proxy configurations   |
+| Certbot       | `foundry-certbot.sh`     | SSL certificate management             |
+| Code Server   | `foundry-code-server.sh` | System install + user config + service |
+| PostgreSQL    | `foundry-postgres.sh`    | Database server                        |
 
 **User Modules**: Run as the target user:
 
-| Module          | Script File  | Description                       |
-| --------------- | ------------ | --------------------------------- |
-| uv              | `uv.sh`      | Python package manager            |
-| nvm             | `nvm.sh`     | Node.js version manager           |
-| Repos Directory | `repos.sh`   | Creates ~/repos folder            |
-| Git & SSH       | `git-ssh.sh` | Git config and SSH key generation |
+| Module          | Script File          | Description                       |
+| --------------- | -------------------- | --------------------------------- |
+| uv              | `foundry-uv.sh`      | Python package manager            |
+| nvm             | `foundry-nvm.sh`     | Node.js version manager           |
+| Repos Directory | `foundry-repos.sh`   | Creates ~/repos folder            |
+| Git & SSH       | `foundry-git-ssh.sh` | Git config and SSH key generation |
 
 ### Idempotency
 
@@ -390,7 +390,7 @@ Each script file in `scripts/` can be run independently and multiple times safel
 
 ## Code-Server Setup Details
 
-The code-server module (`scripts/code-server.sh`) performs a complete setup:
+The code-server module (`scripts/foundry-code-server.sh`) performs a complete setup:
 
 ### What It Does
 
@@ -558,7 +558,7 @@ Re-run workflow with specific modules to update:
 
 Each script in `scripts/` is standalone and can be modified:
 
-1. Edit the specific script file (e.g., `scripts/nginx.sh`)
+1. Edit the specific script file (e.g., `scripts/foundry-nginx.sh`)
 2. Commit changes to your fork
 3. Re-run the workflow
 4. Only that module's script will be updated on the server
