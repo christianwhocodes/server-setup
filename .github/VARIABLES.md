@@ -97,6 +97,7 @@ Control which system-level services to install (requires SUDO_ACCESS_USER):
 - **Description:** Setup OpenSSH and UFW firewall
 - **Type:** Boolean (`true` or `false`)
 - **Default:** `false`
+- **Script:** `scripts/openssh-ufw.sh`
 - **Use case:** Configure firewall and SSH settings
 
 #### SETUP_PACKAGES
@@ -104,6 +105,7 @@ Control which system-level services to install (requires SUDO_ACCESS_USER):
 - **Description:** Install necessary development packages
 - **Type:** Boolean (`true` or `false`)
 - **Default:** `false`
+- **Script:** `scripts/packages.sh`
 - **Installs:** git, curl, wget, build-essential, and development libraries
 
 #### SETUP_NGINX
@@ -111,6 +113,7 @@ Control which system-level services to install (requires SUDO_ACCESS_USER):
 - **Description:** Install and configure Nginx web server
 - **Type:** Boolean (`true` or `false`)
 - **Default:** `false`
+- **Script:** `scripts/nginx.sh`
 - **Use case:** Web server and reverse proxy setup
 
 #### SETUP_CERTBOT
@@ -118,38 +121,36 @@ Control which system-level services to install (requires SUDO_ACCESS_USER):
 - **Description:** Install Certbot for SSL certificates
 - **Type:** Boolean (`true` or `false`)
 - **Default:** `false`
+- **Script:** `scripts/certbot.sh`
 - **Requires:** snapd to be available on the server
 
-#### SETUP_CODE_SERVER_SYSTEM
+#### SETUP_CODE_SERVER
 
-- **Description:** Install code-server system-wide
+- **Description:** Setup code-server (system install + user config + service enable)
 - **Type:** Boolean (`true` or `false`)
 - **Default:** `false`
-- **Use case:** Make code-server available for all users
+- **Script:** `scripts/code-server.sh`
+- **Use case:** Complete code-server setup with secure configuration
+- **Note:** Config file owned by sudo user, target user has read-only access
 
 #### SETUP_POSTGRES
 
 - **Description:** Install and configure PostgreSQL database
 - **Type:** Boolean (`true` or `false`)
 - **Default:** `false`
+- **Script:** `scripts/postgres.sh`
 - **Installs:** PostgreSQL server and client tools
 
 ### User Module Variables
 
 Control which user-level tools to install (no sudo required):
 
-#### SETUP_CODE_SERVER_USER
-
-- **Description:** Configure code-server for the target user
-- **Type:** Boolean (`true` or `false`)
-- **Default:** `false`
-- **Creates:** User-specific code-server configuration with password
-
 #### SETUP_UV
 
 - **Description:** Install uv Python package manager
 - **Type:** Boolean (`true` or `false`)
 - **Default:** `false`
+- **Script:** `scripts/uv.sh`
 - **Also installs:** Latest Python version via uv
 
 #### SETUP_NVM
@@ -157,6 +158,7 @@ Control which user-level tools to install (no sudo required):
 - **Description:** Install nvm Node.js version manager
 - **Type:** Boolean (`true` or `false`)
 - **Default:** `false`
+- **Script:** `scripts/nvm.sh`
 - **Also installs:** Latest Node.js and npm
 
 #### SETUP_REPOS_DIR
@@ -164,6 +166,7 @@ Control which user-level tools to install (no sudo required):
 - **Description:** Create ~/repos directory for projects
 - **Type:** Boolean (`true` or `false`)
 - **Default:** `false`
+- **Script:** `scripts/repos.sh`
 - **Creates:** `~/repos` folder in user's home directory
 
 #### SETUP_GIT_SSH
@@ -171,6 +174,7 @@ Control which user-level tools to install (no sudo required):
 - **Description:** Setup Git configuration and SSH keys
 - **Type:** Boolean (`true` or `false`)
 - **Default:** `false`
+- **Script:** `scripts/git-ssh.sh`
 - **Requires:** Git user name and email must be provided in workflow inputs when this is enabled
 - **Creates:** ed25519 SSH key pair for Git operations
 
@@ -196,7 +200,6 @@ To create a custom setup with only Nginx, PostgreSQL, and user tools:
    ```
    SETUP_NGINX=true
    SETUP_POSTGRES=true
-   SETUP_CODE_SERVER_USER=true
    SETUP_UV=true
    SETUP_REPOS_DIR=true
    ```
@@ -207,6 +210,25 @@ To create a custom setup with only Nginx, PostgreSQL, and user tools:
    - If Git/SSH is enabled, provide Git name and email
 
 3. Only the enabled modules will be installed
+
+---
+
+## Script Files Reference
+
+Each module corresponds to a specific script file in the `scripts/` directory:
+
+| Module Variable     | Script File      | Requires Sudo |
+| ------------------- | ---------------- | ------------- |
+| `SETUP_OPENSSH_UFW` | `openssh-ufw.sh` | Yes           |
+| `SETUP_PACKAGES`    | `packages.sh`    | Yes           |
+| `SETUP_NGINX`       | `nginx.sh`       | Yes           |
+| `SETUP_CERTBOT`     | `certbot.sh`     | Yes           |
+| `SETUP_CODE_SERVER` | `code-server.sh` | Yes           |
+| `SETUP_POSTGRES`    | `postgres.sh`    | Yes           |
+| `SETUP_UV`          | `uv.sh`          | No            |
+| `SETUP_NVM`         | `nvm.sh`         | No            |
+| `SETUP_REPOS_DIR`   | `repos.sh`       | No            |
+| `SETUP_GIT_SSH`     | `git-ssh.sh`     | No            |
 
 ---
 
@@ -224,3 +246,18 @@ To create a custom setup with only Nginx, PostgreSQL, and user tools:
 - Gradual migrations (add one service at a time)
 - Different module combinations across multiple servers
 - Fine-grained control over what gets installed
+
+---
+
+## Code-Server Security Notes
+
+When `SETUP_CODE_SERVER` is enabled:
+
+- The system installs code-server globally
+- Creates user-specific config in `~/.config/code-server/`
+- Config file is owned by sudo user (root) for security
+- Target user can read config but cannot modify it
+- Service runs as: `code-server@[target_user]`
+- Password is protected from unauthorized changes
+
+This ensures that only administrators can modify the code-server configuration while still allowing the service to run properly for the target user.

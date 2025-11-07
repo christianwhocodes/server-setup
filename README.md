@@ -18,7 +18,7 @@ Choose from pre-configured profiles or create your own custom setup:
 Everything you need for a complete development environment:
 
 - **System:** OpenSSH/UFW, Packages, Nginx, Certbot, Code-server, PostgreSQL
-- **User:** Code-server config, uv, nvm, repos directory, Git/SSH
+- **User:** uv, nvm, repos directory, Git/SSH
 - **Perfect for:** Brand new development server from scratch
 
 ### 🖥️ System Services Only
@@ -32,7 +32,7 @@ Just the infrastructure without user tools:
 
 Development tools for a specific user:
 
-- **User:** Code-server config, uv, nvm, repos directory, Git/SSH
+- **User:** uv, nvm, repos directory, Git/SSH
 - **Perfect for:** Adding a new developer to an existing server
 
 ### 🔧 Custom Profile
@@ -50,12 +50,11 @@ Use repository variables for fine-grained control:
 - 🛠️ **Development Packages** - Essential build tools and libraries
 - 🌐 **Nginx** - Web server and reverse proxy
 - 🔒 **Certbot** - SSL certificate management
-- 💻 **Code Server** - VS Code in the browser (system-wide)
+- 💻 **Code Server** - VS Code in the browser (system install + user config + service)
 - 🐘 **PostgreSQL** - Relational database server
 
 **User Modules** (per-user):
 
-- ⚙️ **Code Server Config** - User-specific code-server setup
 - 🐍 **uv** - Python package manager with automatic Python installation
 - 📗 **nvm** - Node.js version manager with automatic Node.js installation
 - 📁 **Repos Directory** - Creates `~/repos` folder for projects
@@ -68,6 +67,7 @@ Use repository variables for fine-grained control:
 - ✅ Idempotent - safe to run multiple times without breaking existing setups
 - ✅ User management - automatically create users with optional sudo access
 - ✅ No manual SSH or script copying required
+- ✅ Modular scripts - each tool in its own file for easy maintenance
 
 ## 📋 Prerequisites
 
@@ -98,17 +98,6 @@ Navigate to your repository's **Settings** → **Secrets and variables** → **A
 
 In the same section, switch to the **Variables** tab:
 
-**Required Variable:**
-
-| Variable Name      | Description                 | Example            |
-| ------------------ | --------------------------- | ------------------ |
-| `SUDO_ACCESS_USER` | User with passwordless sudo | `ubuntu` or `root` |
-
-**Note:** This user is used for system-level operations and must already exist on the server with:
-
-- Passwordless sudo access
-- SSH access using the `SERVER_SSH_KEY`
-
 **Optional Variables:**
 
 | Variable Name            | Description                  | Default   |
@@ -129,12 +118,11 @@ If you want to use the "Custom" profile for fine-grained control, add these bool
 - `SETUP_PACKAGES` - Install development packages (true/false)
 - `SETUP_NGINX` - Setup Nginx (true/false)
 - `SETUP_CERTBOT` - Setup Certbot (true/false)
-- `SETUP_CODE_SERVER_SYSTEM` - Install code-server system-wide (true/false)
+- `SETUP_CODE_SERVER` - Setup code-server (system + user + service) (true/false)
 - `SETUP_POSTGRES` - Setup PostgreSQL (true/false)
 
 **User Module Variables:**
 
-- `SETUP_CODE_SERVER_USER` - Configure code-server for user (true/false)
 - `SETUP_UV` - Install uv (true/false)
 - `SETUP_NVM` - Install nvm (true/false)
 - `SETUP_REPOS_DIR` - Create repos directory (true/false)
@@ -200,7 +188,7 @@ Install one specific module using custom variables:
 2. **target_user** (specified in workflow inputs)
    - The user you want to configure with development tools
    - Can be created automatically if it doesn't exist
-   - Receives user-level configurations (code-server, nvm, uv, etc.)
+   - Receives user-level configurations (uv, nvm, etc.)
    - Can optionally be given sudo access when created
 
 **SSH Keys:**
@@ -247,8 +235,39 @@ After the workflow completes, check the **Summary** tab for:
 
 1. **Add SSH key to Git hosting** - Copy the displayed public key to GitHub/GitLab/etc.
 2. **Access code-server** - Use the provided URL and password
-3. **Enable code-server service** - If not auto-enabled, run the command shown in summary
-4. **Start developing!** - Your server is ready to use
+3. **Start developing!** - Your server is ready to use
+
+### 💻 Code-Server Security
+
+The code-server setup includes enhanced security:
+
+- Config file is owned by the sudo user (root)
+- Target user can read the config but cannot modify it
+- Password is protected from unauthorized changes
+- Service runs as the target user: `code-server@[target_user]`
+
+## 📁 Repository Structure
+
+```
+foundry/
+├── .github/
+│   ├── workflows/
+│   │   └── setup-server.yml       # Main workflow file
+│   ├── DEPLOYMENT_GUIDE.md        # Detailed deployment guide
+│   └── VARIABLES.md               # Configuration reference
+├── scripts/
+│   ├── openssh-ufw.sh            # OpenSSH & UFW setup
+│   ├── packages.sh               # Development packages
+│   ├── nginx.sh                  # Nginx web server
+│   ├── certbot.sh                # SSL certificates
+│   ├── postgres.sh               # PostgreSQL database
+│   ├── code-server.sh            # Code-server (unified)
+│   ├── uv.sh                     # Python package manager
+│   ├── nvm.sh                    # Node.js version manager
+│   ├── repos.sh                  # Repos directory
+│   └── git-ssh.sh                # Git & SSH keys
+└── README.md                     # This file
+```
 
 ## 📖 Documentation
 

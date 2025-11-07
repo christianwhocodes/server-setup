@@ -11,40 +11,45 @@ This guide explains how to use the GitHub Actions workflow to automatically depl
 
 ## Quick Start
 
-### Step 1: Generate and Configure SSH Keys
+### Step 1: Ensure SSH Access to Server
 
-1. **Generate an SSH key pair for GitHub Actions** (if you don't have one):
+When creating your server VM (e.g., DigitalOcean Droplet, AWS EC2, or other cloud provider):
 
+1. **During VM provisioning**: Add your SSH public key
+   - Most cloud providers have a section to add SSH keys during VM creation
+   - The key will be added to the default sudo user (typically `ubuntu` or `root`)
+   - Save the corresponding private key securely on your local machine
+
+2. **Verify SSH access** (optional but recommended):
    ```bash
-   ssh-keygen -t ed25519 -f ~/.ssh/foundry_deploy -C "github-actions-deploy"
+   ssh -i /path/to/your/private-key ubuntu@your-server-ip
    ```
 
-   **Important Security Notes:**
-   - Consider using a passphrase for the private key (you'll need to handle this in your workflow or use a dedicated deployment key without a passphrase)
-   - Store the private key securely
-   - Use different keys for different servers/environments
-   - Regularly rotate your deployment keys
-   - Never commit private keys to version control
+If you can successfully SSH into the server, you're ready to proceed.
 
-2. **Add the public key to your server's sudo user:**
+### Step 2: Add Private Key to GitHub Secrets
 
-   When deploying your server VM (e.g., on Amazon EC2, DigitalOcean, etc.), ensure the default user (like `ubuntu` or `root`) is configured with SSH access. Add your public key:
+- Go to: **Settings** → **Secrets and variables** → **Actions** → **Secrets**
+- Click **New repository secret**
+- Name: `SERVER_SSH_KEY`
+- Value: Paste the **entire content** of `~/.ssh/foundry_deploy` (the private key file)
 
-   ```bash
-   # Copy public key to your server
-   ssh-copy-id -i ~/.ssh/foundry_deploy.pub ubuntu@your-server-ip
+### Step 2: Add Private Key to GitHub Secrets
 
-   # Or manually:
-   cat ~/.ssh/foundry_deploy.pub | ssh ubuntu@your-server-ip "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"
-   ```
+Add the SSH private key that has access to your server:
 
-3. **Add private key to GitHub:**
-   - Go to: **Settings** → **Secrets and variables** → **Actions** → **Secrets**
-   - Click **New repository secret**
-   - Name: `SERVER_SSH_KEY`
-   - Value: Paste the **entire content** of `~/.ssh/foundry_deploy` (the private key file)
+- Go to: **Settings** → **Secrets and variables** → **Actions** → **Secrets**
+- Click **New repository secret**
+- Name: `SERVER_SSH_KEY`
+- Value: Paste the **entire content** of your private key file (the one configured during VM creation)
 
-### Step 2: Configure SUDO_ACCESS_USER
+**Security Notes:**
+
+- Use a dedicated deployment key when possible
+- Never commit private keys to version control
+- Use passphrase-free keys for automation (or handle passphrases appropriately)
+
+### Step 3: Configure SUDO_ACCESS_USER
 
 Add the username of your sudo user as a secret:
 
@@ -59,11 +64,30 @@ Add the username of your sudo user as a secret:
 - Have passwordless sudo access
 - Have SSH access with the `SERVER_SSH_KEY` you configured in Step 1
 
-### Step 3: (Optional) Configure Repository Variables
+### Step 3: Configure SUDO_ACCESS_USER
+
+Add the username of your sudo user as a secret:
+
+- Go to: **Settings** → **Secrets and variables** → **Actions** → **Secrets**
+- Click **New repository secret**
+- Name: `SUDO_ACCESS_USER`
+- Value: `ubuntu` (or `root`, or whatever sudo user was configured during VM creation)
+
+**Important:** This user must:
+
+- Already exist on the server
+- Have passwordless sudo access
+- Have SSH access with the `SERVER_SSH_KEY` private key you added in Step 2
+
+### Step 4: (Optional) Configure Repository Variables
 
 See [VARIABLES.md](VARIABLES.md) for available variables like `NVM_VERSION`, `CODE_SERVER_PORT_START`, etc.
 
-### Step 4: Run the Workflow
+### Step 4: (Optional) Configure Repository Variables
+
+See [VARIABLES.md](VARIABLES.md) for available variables like `NVM_VERSION`, `CODE_SERVER_PORT_START`, etc.
+
+### Step 5: Run the Workflow
 
 1. Go to **Actions** tab in your repository
 2. Select **Setup Server** workflow
@@ -91,13 +115,47 @@ See [VARIABLES.md](VARIABLES.md) for available variables like `NVM_VERSION`, `CO
 
 5. Click **Run workflow**
 
-### Step 5: Monitor Deployment
+### Step 5: Run the Workflow
+
+1. Go to **Actions** tab in your repository
+2. Select **Setup Server** workflow
+3. Click **Run workflow** (top right)
+4. Fill in the form:
+
+   **Required inputs:**
+   - **Server host**: Your server IP or hostname
+   - **Server port**: SSH port (default: 22)
+   - **Target user**: The user to setup (will be created if doesn't exist)
+   - **Setup profile**: Choose from dropdown:
+     - **Full Development Server** - Complete setup with all modules
+     - **System Services Only** - Infrastructure only (Nginx, PostgreSQL, etc.)
+     - **User Tools Only** - Development tools for a specific user
+     - **Custom (use repository variables)** - Fine-grained control via variables
+
+   **User creation options (if user doesn't exist):**
+   - **Create user if missing**: Check to auto-create the user
+   - **Make user sudo**: Check to give the new user passwordless sudo
+   - **SSH public key**: Paste SSH public key to allow SSH login for new user (this is different from `SERVER_SSH_KEY`)
+
+   **Git configuration (required for profiles with user tools):**
+   - **Git user name**: Required if Git/SSH setup is enabled in the selected profile
+   - **Git user email**: Required if Git/SSH setup is enabled in the selected profile
+
+5. Click **Run workflow**
+
+### Step 6: Monitor Deployment
 
 - Watch the workflow execution in real-time
 - Check for any errors in the logs
 - Review the post-setup instructions in the workflow output
 
-### Step 6: Review Outputs
+### Step 6: Monitor Deployment
+
+- Watch the workflow execution in real-time
+- Check for any errors in the logs
+- Review the post-setup instructions in the workflow output
+
+### Step 7: Review Outputs
 
 After the workflow completes:
 
@@ -128,7 +186,7 @@ This is a common source of confusion, so let's clarify:
    - Can be:
      - An existing user (like `SUDO_ACCESS_USER`)
      - A new user to be created
-   - Used for: Code-server config, nvm, uv, Git setup, etc.
+   - Used for: uv, nvm, Git setup, etc.
 
 ### SSH Key Confusion Explained
 
@@ -181,24 +239,18 @@ Target user: developer
 Create user if missing: ✓
 Make user sudo: ✓
 SSH public key: <paste your personal public key>
+Setup profile: Full Development Server
 
-# System modules (all checked)
-Setup OpenSSH and UFW: ✓
-Setup packages: ✓
-Setup Nginx: ✓
-Setup Certbot: ✓
-Setup code-server (system): ✓
-Setup PostgreSQL: ✓
-
-# User modules (all checked)
-Setup code-server (user): ✓
-Setup uv: ✓
-Setup nvm: ✓
-Setup repos directory: ✓
-Setup Git and SSH: ✓
 Git user name: John Doe
 Git user email: john@example.com
 ```
+
+**What happens:**
+
+- All system modules installed (OpenSSH/UFW, packages, Nginx, Certbot, code-server, PostgreSQL)
+- All user modules configured (uv, nvm, repos, Git/SSH)
+- Code-server config created with secure permissions
+- Service enabled as `code-server@developer`
 
 **Note:** Git credentials are only required because this profile includes Git/SSH setup.
 
@@ -209,16 +261,17 @@ Just configure development tools for an existing user:
 ```yaml
 Server host: 192.168.1.100
 Target user: existinguser
+Setup profile: User Tools Only
 
-# User modules only
-Setup code-server (user): ✓
-Setup uv: ✓
-Setup nvm: ✓
-Setup repos directory: ✓
-Setup Git and SSH: ✓
 Git user name: Jane Smith
 Git user email: jane@example.com
 ```
+
+**What happens:**
+
+- Only user modules: uv, nvm, repos, Git/SSH
+- No system changes
+- No sudo required (unless target user doesn't exist)
 
 **Note:** Git credentials are only required because Git/SSH setup is selected.
 
@@ -229,28 +282,33 @@ Install system-wide tools without user-specific configuration:
 ```yaml
 Server host: 192.168.1.100
 Target user: ubuntu # or any existing user
-
-# System modules only
-Setup OpenSSH and UFW: ✓
-Setup packages: ✓
-Setup Nginx: ✓
-Setup Certbot: ✓
-Setup PostgreSQL: ✓
+Setup profile: System Services Only
 ```
 
-### Scenario 4: Add Code-Server to Existing User
+**What happens:**
 
-Just setup code-server for a user who already has other tools:
+- System modules: OpenSSH/UFW, packages, Nginx, Certbot, code-server (system install + user config for ubuntu), PostgreSQL
+- Code-server configured for the specified target user
+- No other user-specific tools installed
+
+### Scenario 4: Add Single Module Using Custom Profile
+
+Just add nvm to an existing user who already has other tools:
+
+1. Set repository variable: `SETUP_NVM=true`
+2. Run workflow:
 
 ```yaml
 Server host: 192.168.1.100
 Target user: developer
-
-# Only code-server
-Setup code-server (user): ✓
+Setup profile: Custom (use repository variables)
 ```
 
-**Note:** Git credentials are NOT required for this scenario since Git/SSH setup is not enabled.
+**What happens:**
+
+- Only nvm is installed
+- All other existing setups remain unchanged
+- Idempotent - safe to run
 
 ### Scenario 5: Re-run Setup (Idempotent)
 
@@ -259,10 +317,15 @@ All modules are idempotent - safe to run multiple times. To add a new tool or re
 ```yaml
 Server host: 192.168.1.100
 Target user: developer
-
-# Only check the new tool you want to add
-Setup nvm: ✓ # Adds nvm if not already installed
+Setup profile: Custom (use repository variables)
+# Set SETUP_POSTGRES=true in repository variables
 ```
+
+**What happens:**
+
+- Only PostgreSQL is added
+- Existing tools (nvm, uv, etc.) are detected and skipped
+- No duplicate configurations
 
 ## Understanding the Workflow
 
@@ -272,12 +335,12 @@ The workflow uses **profiles** to simplify configuration:
 
 1. **Full Development Server**
    - All system modules: OpenSSH/UFW, Packages, Nginx, Certbot, Code-server, PostgreSQL
-   - All user modules: Code-server config, uv, nvm, repos, Git/SSH
+   - All user modules: uv, nvm, repos, Git/SSH
    - Requires: SUDO_ACCESS_USER, Git configuration
 
 2. **System Services Only**
-   - All system modules only
-   - No user modules
+   - All system modules only (including code-server for target user)
+   - No additional user modules
    - Requires: SUDO_ACCESS_USER
 
 3. **User Tools Only**
@@ -291,28 +354,80 @@ The workflow uses **profiles** to simplify configuration:
    - Variables: `SETUP_OPENSSH_UFW`, `SETUP_PACKAGES`, `SETUP_NGINX`, etc.
    - See [VARIABLES.md](VARIABLES.md) for full list
 
-### Module Types
+### Module Types and Scripts
 
-**System Modules**: Require `SUDO_ACCESS_USER` to be configured. These install system-wide tools and services:
+**System Modules**: Require `SUDO_ACCESS_USER` to be configured:
 
-- Run with sudo privileges
-- Installed for all users
-- Examples: Nginx, PostgreSQL, system packages
+| Module        | Script File      | Description                            |
+| ------------- | ---------------- | -------------------------------------- |
+| OpenSSH & UFW | `openssh-ufw.sh` | Firewall and SSH configuration         |
+| Packages      | `packages.sh`    | Development tools and libraries        |
+| Nginx         | `nginx.sh`       | Web server with proxy configurations   |
+| Certbot       | `certbot.sh`     | SSL certificate management             |
+| Code Server   | `code-server.sh` | System install + user config + service |
+| PostgreSQL    | `postgres.sh`    | Database server                        |
 
-**User Modules**: Run as the target user. These configure user-specific tools:
+**User Modules**: Run as the target user:
 
-- No sudo required
-- Configured per user
-- Examples: code-server config, nvm, uv, Git config
+| Module          | Script File  | Description                       |
+| --------------- | ------------ | --------------------------------- |
+| uv              | `uv.sh`      | Python package manager            |
+| nvm             | `nvm.sh`     | Node.js version manager           |
+| Repos Directory | `repos.sh`   | Creates ~/repos folder            |
+| Git & SSH       | `git-ssh.sh` | Git config and SSH key generation |
 
 ### Idempotency
 
-All modules check if their components are already installed/configured before making changes. This means:
+All scripts are designed to be idempotent:
 
+- Check if components are already installed before installing
 - Safe to run multiple times
 - Won't duplicate configurations
 - Won't break existing setups
 - Can selectively add new modules
+
+Each script file in `scripts/` can be run independently and multiple times safely.
+
+## Code-Server Setup Details
+
+The code-server module (`scripts/code-server.sh`) performs a complete setup:
+
+### What It Does
+
+1. **System Installation**: Installs code-server globally if not present
+2. **User Configuration**: Creates config in `~/.config/code-server/` for target user
+3. **Security Setup**: Sets proper permissions for secure operation
+4. **Service Management**: Enables and starts `code-server@[target_user]` service
+
+### Security Features
+
+```bash
+# Config owned by sudo user (root)
+chown -R root:root ~/.config/code-server/
+chmod 755 ~/.config/code-server/
+chmod 600 config.yaml
+```
+
+**This means:**
+
+- ✅ Target user can **read** the config (required for code-server to run)
+- ❌ Target user **cannot modify** the config (password is protected)
+- ✅ Only sudo user can change the password or configuration
+
+### Service Management
+
+The service runs as the target user:
+
+```bash
+sudo systemctl enable --now code-server@[target_user]
+```
+
+You can manage it with:
+
+```bash
+sudo systemctl status code-server@[target_user]
+sudo systemctl restart code-server@[target_user]
+```
 
 ## Troubleshooting
 
@@ -323,11 +438,12 @@ All modules check if their components are already installed/configured before ma
 **Solutions:**
 
 1. Verify server is reachable: `ping your-server-ip`
-2. Check SSH key is correct in GitHub Secrets (entire private key including headers)
-3. Verify public key is in the SUDO_ACCESS_USER's `~/.ssh/authorized_keys`
+2. Check SSH key in GitHub Secrets matches the key configured during VM creation
+3. Verify the `SUDO_ACCESS_USER` value matches the user that has SSH access on the server
 4. Check firewall allows SSH: `sudo ufw status`
 5. Verify SSH port (default is 22)
-6. Test manually: `ssh -i ~/.ssh/foundry_deploy ubuntu@your-server-ip`
+6. Test manually with the same key: `ssh -i /path/to/private-key sudo-user@your-server-ip`
+7. If VM was recently created, ensure it's fully booted and SSH service is running
 
 ### SUDO_ACCESS_USER Not Set
 
@@ -369,7 +485,8 @@ All modules check if their components are already installed/configured before ma
 
 1. Modules are idempotent - they skip if already installed
 2. To force reconfiguration, manually uninstall the component first
-3. Check the specific module logs for what was detected
+3. Check the specific script file in `scripts/` directory for what was detected
+4. Review the workflow logs for specific detection logic
 
 ### Credential Retrieval Failed
 
@@ -377,10 +494,11 @@ All modules check if their components are already installed/configured before ma
 
 **Solutions:**
 
-1. Check that the user setup step completed successfully
+1. Check that the code-server setup step completed successfully
 2. Verify config files were created: `ls -la ~/.config/code-server/`
 3. Check SSH key was generated: `ls -la ~/.ssh/id_ed25519*`
 4. Review the "Retrieve setup credentials" step logs
+5. Verify permissions on config file allow reading
 
 ### Git Configuration Errors
 
@@ -391,6 +509,23 @@ All modules check if their components are already installed/configured before ma
 1. Verify that your selected profile or custom configuration includes Git/SSH setup
 2. If Git/SSH setup is enabled, both git_user_name and git_user_email are required
 3. If you don't need Git/SSH setup, choose a profile or custom configuration that doesn't include it
+
+### Code-Server Permission Issues
+
+**Problem:** Code-server won't start or config cannot be read
+
+**Solutions:**
+
+1. Check config file exists: `ls -la ~/.config/code-server/config.yaml`
+2. Verify permissions allow reading:
+   ```bash
+   # Should show: drwxr-xr-x for directory
+   ls -ld ~/.config/code-server/
+   # Should show: -rw------- and owned by root
+   ls -l ~/.config/code-server/config.yaml
+   ```
+3. Check service status: `sudo systemctl status code-server@[target_user]`
+4. Review service logs: `sudo journalctl -u code-server@[target_user] -n 50`
 
 ## Advanced Usage
 
@@ -406,7 +541,7 @@ To deploy to multiple servers simultaneously:
 
 Mix and match modules based on your needs:
 
-- Development server: code-server, nvm, uv, Git
+- Development server: code-server, uv, nvm, Git
 - Web server: Nginx, Certbot, PostgreSQL
 - Minimal setup: Just packages and UFW
 
@@ -414,9 +549,19 @@ Mix and match modules based on your needs:
 
 Re-run workflow with specific modules to update:
 
-1. Run with only the module you want to update checked
-2. Idempotency ensures safe updates
-3. No need to re-run all modules
+1. Use Custom profile with only the module you want to update
+2. Set repository variable (e.g., `SETUP_NGINX=true`)
+3. Run workflow - idempotency ensures safe updates
+4. No need to re-run all modules
+
+### Modifying Individual Scripts
+
+Each script in `scripts/` is standalone and can be modified:
+
+1. Edit the specific script file (e.g., `scripts/nginx.sh`)
+2. Commit changes to your fork
+3. Re-run the workflow
+4. Only that module's script will be updated on the server
 
 ## Security Best Practices
 
@@ -436,20 +581,27 @@ Re-run workflow with specific modules to update:
    - Limit sudo permissions where possible
    - Regularly audit sudo access
 
-4. **Limited Access**:
+4. **Code-Server Security**:
+   - Config owned by root protects password
+   - Target user cannot modify configuration
+   - Only administrators can change settings
+   - Service runs with appropriate user permissions
+
+5. **Limited Access**:
    - Create deployment users with minimal required permissions
    - Use principle of least privilege
 
-5. **Audit Logs**:
+6. **Audit Logs**:
    - Review workflow runs regularly
    - Monitor failed authentication attempts on servers
    - Keep server logs for security review
 
-6. **Branch Protection**:
+7. **Branch Protection**:
    - Protect main branch to prevent unauthorized workflow changes
    - Require pull request reviews for workflow modifications
+   - Require pull request reviews for script changes
 
-7. **Key Rotation**:
+8. **Key Rotation**:
    - Regularly rotate SSH keys and update secrets
    - Remove old keys from authorized_keys
    - Update GitHub Secrets after rotation
@@ -461,9 +613,11 @@ If you encounter issues:
 1. Check the workflow logs for detailed error messages
 2. Review this guide's troubleshooting section
 3. Consult [VARIABLES.md](VARIABLES.md) for configuration options
-4. Check the main [README.md](../README.md)
-5. Open an issue in the repository with:
+4. Check the individual script files in `scripts/` directory
+5. Check the main [README.md](../README.md)
+6. Open an issue in the repository with:
    - Workflow run link (sanitized)
    - Error messages
    - Server OS and version
    - Steps to reproduce
+   - Which script file is causing issues
