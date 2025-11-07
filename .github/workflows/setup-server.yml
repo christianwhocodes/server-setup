@@ -266,6 +266,18 @@ jobs:
             fi
           ENDSSH
 
+      - name: Upload scripts to server
+        run: |
+          if [[ "${{ steps.validate.outputs.has_system_modules }}" == "true" ]]; then
+            SSH_USER="${{ secrets.SUDO_ACCESS_USER }}"
+          else
+            SSH_USER="${{ inputs.target_user }}"
+          fi
+
+          scp -i ~/.ssh/deploy_key -P ${{ inputs.server_port }} \
+            scripts/*.sh \
+            ${SSH_USER}@${{ inputs.server_host }}:/tmp/
+
       - name: Initial system update
         if: steps.validate.outputs.has_system_modules == 'true'
         run: |
@@ -290,9 +302,9 @@ jobs:
             SCRIPT_URL="https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/scripts/openssh-ufw.sh"
             echo "🚀 Setting up OpenSSH and UFW..."
             if [[ $EUID -eq 0 ]]; then
-              bash -c "$(curl -fsSL $SCRIPT_URL)"
+              bash /tmp/openssh-ufw.sh
             elif command -v sudo >/dev/null 2>&1; then
-              sudo bash -c "$(curl -fsSL $SCRIPT_URL)"
+              sudo bash /tmp/openssh-ufw.sh
             fi
             echo "✅ OpenSSH and UFW setup completed"
           ENDSSH
@@ -305,9 +317,9 @@ jobs:
             SCRIPT_URL="https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/scripts/packages.sh"
             echo "🚀 Installing necessary packages..."
             if [[ $EUID -eq 0 ]]; then
-              bash -c "$(curl -fsSL $SCRIPT_URL)"
+              bash /tmp/packages.sh
             elif command -v sudo >/dev/null 2>&1; then
-              sudo bash -c "$(curl -fsSL $SCRIPT_URL)"
+              sudo bash /tmp/packages.sh
             fi
             echo "✅ Necessary packages setup completed"
           ENDSSH
@@ -320,9 +332,9 @@ jobs:
             SCRIPT_URL="https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/scripts/nginx.sh"
             echo "🚀 Setting up Nginx..."
             if [[ $EUID -eq 0 ]]; then
-              bash -c "$(curl -fsSL $SCRIPT_URL)"
+              bash /tmp/nginx.sh
             elif command -v sudo >/dev/null 2>&1; then
-              sudo bash -c "$(curl -fsSL $SCRIPT_URL)"
+              sudo bash /tmp/nginx.sh
             fi
             echo "✅ Nginx setup completed"
           ENDSSH
@@ -335,9 +347,9 @@ jobs:
             SCRIPT_URL="https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/scripts/certbot.sh"
             echo "🚀 Setting up Certbot..."
             if [[ $EUID -eq 0 ]]; then
-              bash -c "$(curl -fsSL $SCRIPT_URL)"
+              bash /tmp/certbot.sh
             elif command -v sudo >/dev/null 2>&1; then
-              sudo bash -c "$(curl -fsSL $SCRIPT_URL)"
+              sudo bash /tmp/certbot.sh
             fi
             echo "✅ Certbot setup completed"
           ENDSSH
@@ -350,9 +362,9 @@ jobs:
             SCRIPT_URL="https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/scripts/postgres.sh"
             echo "🚀 Setting up PostgreSQL..."
             if [[ $EUID -eq 0 ]]; then
-              bash -c "$(curl -fsSL $SCRIPT_URL)"
+              bash /tmp/postgres.sh
             elif command -v sudo >/dev/null 2>&1; then
-              sudo bash -c "$(curl -fsSL $SCRIPT_URL)"
+              sudo bash /tmp/postgres.sh
             fi
             echo "✅ PostgreSQL setup completed"
           ENDSSH
@@ -370,9 +382,9 @@ jobs:
             
             echo "🚀 Setting up code-server (system + user config + service)..."
             if [[ $EUID -eq 0 ]]; then
-              TARGET_USER="$TARGET_USER" CODE_SERVER_PORT_START="$CODE_SERVER_PORT_START" CODE_SERVER_PORT_END="$CODE_SERVER_PORT_END" bash -c "$(curl -fsSL $SCRIPT_URL)"
+              bash /tmp/code-server.sh
             elif command -v sudo >/dev/null 2>&1; then
-              sudo TARGET_USER="$TARGET_USER" CODE_SERVER_PORT_START="$CODE_SERVER_PORT_START" CODE_SERVER_PORT_END="$CODE_SERVER_PORT_END" bash -c "$(curl -fsSL $SCRIPT_URL)"
+              sudo bash /tmp/code-server.sh
             fi
             echo "✅ Code-server setup completed"
           ENDSSH
@@ -384,7 +396,7 @@ jobs:
             set -e
             SCRIPT_URL="https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/scripts/uv.sh"
             echo "🚀 Setting up uv..."
-            bash -c "$(curl -fsSL $SCRIPT_URL)"
+            bash /tmp/uv.sh
             echo "✅ uv setup completed"
           ENDSSH
 
@@ -397,7 +409,7 @@ jobs:
             SCRIPT_URL="https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/scripts/nvm.sh"
             
             echo "🚀 Setting up nvm..."
-            NVM_VERSION="$NVM_VERSION" bash -c "$(curl -fsSL $SCRIPT_URL)"
+            bash /tmp/nvm.sh
             echo "✅ nvm setup completed"
           ENDSSH
 
@@ -408,7 +420,7 @@ jobs:
             set -e
             SCRIPT_URL="https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/scripts/repos.sh"
             echo "🚀 Setting up repos directory..."
-            bash -c "$(curl -fsSL $SCRIPT_URL)"
+            bash /tmp/repos.sh
             echo "✅ repos directory setup completed"
           ENDSSH
 
@@ -422,7 +434,7 @@ jobs:
             SCRIPT_URL="https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/scripts/git-ssh.sh"
             
             echo "🚀 Setting up Git and SSH..."
-            GIT_USER_NAME="$GIT_USER_NAME" GIT_USER_EMAIL="$GIT_USER_EMAIL" bash -c "$(curl -fsSL $SCRIPT_URL)"
+            bash /tmp/git-ssh.sh
             echo "✅ Git and SSH setup completed"
           ENDSSH
 
@@ -535,5 +547,14 @@ jobs:
       - name: Cleanup
         if: always()
         run: |
-          # Clean up local deploy key
+          # Determine which user uploaded the scripts
+          if [[ "${{ steps.validate.outputs.has_system_modules }}" == "true" ]]; then
+            SSH_USER="${{ secrets.SUDO_ACCESS_USER }}"
+          else
+            SSH_USER="${{ inputs.target_user }}"
+          fi
+
+          # Clean up remote scripts first (while SSH key still exists)
+          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${SSH_USER}@${{ inputs.server_host }} "rm -f /tmp/*.sh" 2>/dev/null || true
+          # Then clean up local deploy key
           rm -f ~/.ssh/deploy_key
