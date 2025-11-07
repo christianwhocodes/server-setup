@@ -266,18 +266,6 @@ jobs:
             fi
           ENDSSH
 
-      - name: Upload scripts to server
-        run: |
-          if [[ "${{ steps.validate.outputs.has_system_modules }}" == "true" ]]; then
-            SSH_USER="${{ secrets.SUDO_ACCESS_USER }}"
-          else
-            SSH_USER="${{ inputs.target_user }}"
-          fi
-
-          scp -i ~/.ssh/deploy_key -P ${{ inputs.server_port }} \
-            scripts/foundry-*.sh \
-            ${SSH_USER}@${{ inputs.server_host }}:/tmp/
-
       - name: Initial system update
         if: steps.validate.outputs.has_system_modules == 'true'
         run: |
@@ -299,11 +287,12 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ secrets.SUDO_ACCESS_USER }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
+            SCRIPT_URL="https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/scripts/openssh-ufw.sh"
             echo "🚀 Setting up OpenSSH and UFW..."
             if [[ $EUID -eq 0 ]]; then
-              bash /tmp/foundry-openssh-ufw.sh
+              bash -c "$(curl -fsSL $SCRIPT_URL)"
             elif command -v sudo >/dev/null 2>&1; then
-              sudo bash /tmp/foundry-openssh-ufw.sh
+              sudo bash -c "$(curl -fsSL $SCRIPT_URL)"
             fi
             echo "✅ OpenSSH and UFW setup completed"
           ENDSSH
@@ -313,11 +302,12 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ secrets.SUDO_ACCESS_USER }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
+            SCRIPT_URL="https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/scripts/packages.sh"
             echo "🚀 Installing necessary packages..."
             if [[ $EUID -eq 0 ]]; then
-              bash /tmp/foundry-packages.sh
+              bash -c "$(curl -fsSL $SCRIPT_URL)"
             elif command -v sudo >/dev/null 2>&1; then
-              sudo bash /tmp/foundry-packages.sh
+              sudo bash -c "$(curl -fsSL $SCRIPT_URL)"
             fi
             echo "✅ Necessary packages setup completed"
           ENDSSH
@@ -327,11 +317,12 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ secrets.SUDO_ACCESS_USER }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
+            SCRIPT_URL="https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/scripts/nginx.sh"
             echo "🚀 Setting up Nginx..."
             if [[ $EUID -eq 0 ]]; then
-              bash /tmp/foundry-nginx.sh
+              bash -c "$(curl -fsSL $SCRIPT_URL)"
             elif command -v sudo >/dev/null 2>&1; then
-              sudo bash /tmp/foundry-nginx.sh
+              sudo bash -c "$(curl -fsSL $SCRIPT_URL)"
             fi
             echo "✅ Nginx setup completed"
           ENDSSH
@@ -341,11 +332,12 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ secrets.SUDO_ACCESS_USER }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
+            SCRIPT_URL="https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/scripts/certbot.sh"
             echo "🚀 Setting up Certbot..."
             if [[ $EUID -eq 0 ]]; then
-              bash /tmp/foundry-certbot.sh
+              bash -c "$(curl -fsSL $SCRIPT_URL)"
             elif command -v sudo >/dev/null 2>&1; then
-              sudo bash /tmp/foundry-certbot.sh
+              sudo bash -c "$(curl -fsSL $SCRIPT_URL)"
             fi
             echo "✅ Certbot setup completed"
           ENDSSH
@@ -355,11 +347,12 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ secrets.SUDO_ACCESS_USER }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
+            SCRIPT_URL="https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/scripts/postgres.sh"
             echo "🚀 Setting up PostgreSQL..."
             if [[ $EUID -eq 0 ]]; then
-              bash /tmp/foundry-postgres.sh
+              bash -c "$(curl -fsSL $SCRIPT_URL)"
             elif command -v sudo >/dev/null 2>&1; then
-              sudo bash /tmp/foundry-postgres.sh
+              sudo bash -c "$(curl -fsSL $SCRIPT_URL)"
             fi
             echo "✅ PostgreSQL setup completed"
           ENDSSH
@@ -370,15 +363,16 @@ jobs:
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ secrets.SUDO_ACCESS_USER }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
             
-            export TARGET_USER="${{ inputs.target_user }}"
-            export CODE_SERVER_PORT_START="${{ vars.CODE_SERVER_PORT_START || '8080' }}"
-            export CODE_SERVER_PORT_END="${{ vars.CODE_SERVER_PORT_END || '8100' }}"
+            TARGET_USER="${{ inputs.target_user }}"
+            CODE_SERVER_PORT_START="${{ vars.CODE_SERVER_PORT_START || '8080' }}"
+            CODE_SERVER_PORT_END="${{ vars.CODE_SERVER_PORT_END || '8100' }}"
+            SCRIPT_URL="https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/scripts/code-server.sh"
             
             echo "🚀 Setting up code-server (system + user config + service)..."
             if [[ $EUID -eq 0 ]]; then
-              bash /tmp/foundry-code-server.sh
+              TARGET_USER="$TARGET_USER" CODE_SERVER_PORT_START="$CODE_SERVER_PORT_START" CODE_SERVER_PORT_END="$CODE_SERVER_PORT_END" bash -c "$(curl -fsSL $SCRIPT_URL)"
             elif command -v sudo >/dev/null 2>&1; then
-              sudo bash /tmp/foundry-code-server.sh
+              sudo TARGET_USER="$TARGET_USER" CODE_SERVER_PORT_START="$CODE_SERVER_PORT_START" CODE_SERVER_PORT_END="$CODE_SERVER_PORT_END" bash -c "$(curl -fsSL $SCRIPT_URL)"
             fi
             echo "✅ Code-server setup completed"
           ENDSSH
@@ -388,8 +382,9 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ inputs.target_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
+            SCRIPT_URL="https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/scripts/uv.sh"
             echo "🚀 Setting up uv..."
-            bash /tmp/foundry-uv.sh
+            bash -c "$(curl -fsSL $SCRIPT_URL)"
             echo "✅ uv setup completed"
           ENDSSH
 
@@ -398,10 +393,11 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ inputs.target_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
-            export NVM_VERSION="${{ vars.NVM_VERSION || 'v0.40.3' }}"
+            NVM_VERSION="${{ vars.NVM_VERSION || 'v0.40.3' }}"
+            SCRIPT_URL="https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/scripts/nvm.sh"
             
             echo "🚀 Setting up nvm..."
-            bash /tmp/foundry-nvm.sh
+            NVM_VERSION="$NVM_VERSION" bash -c "$(curl -fsSL $SCRIPT_URL)"
             echo "✅ nvm setup completed"
           ENDSSH
 
@@ -410,8 +406,9 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ inputs.target_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
+            SCRIPT_URL="https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/scripts/repos.sh"
             echo "🚀 Setting up repos directory..."
-            bash /tmp/foundry-repos.sh
+            bash -c "$(curl -fsSL $SCRIPT_URL)"
             echo "✅ repos directory setup completed"
           ENDSSH
 
@@ -420,11 +417,12 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ inputs.target_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
-            export GIT_USER_NAME="${{ inputs.git_user_name }}"
-            export GIT_USER_EMAIL="${{ inputs.git_user_email }}"
+            GIT_USER_NAME="${{ inputs.git_user_name }}"
+            GIT_USER_EMAIL="${{ inputs.git_user_email }}"
+            SCRIPT_URL="https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/scripts/git-ssh.sh"
             
             echo "🚀 Setting up Git and SSH..."
-            bash /tmp/foundry-git-ssh.sh
+            GIT_USER_NAME="$GIT_USER_NAME" GIT_USER_EMAIL="$GIT_USER_EMAIL" bash -c "$(curl -fsSL $SCRIPT_URL)"
             echo "✅ Git and SSH setup completed"
           ENDSSH
 
@@ -537,14 +535,5 @@ jobs:
       - name: Cleanup
         if: always()
         run: |
-          # Determine which user uploaded the scripts
-          if [[ "${{ steps.validate.outputs.has_system_modules }}" == "true" ]]; then
-            SSH_USER="${{ secrets.SUDO_ACCESS_USER }}"
-          else
-            SSH_USER="${{ inputs.target_user }}"
-          fi
-
-          # Clean up remote scripts first (while SSH key still exists)
-          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${SSH_USER}@${{ inputs.server_host }} "rm -f /tmp/foundry-*.sh" 2>/dev/null || true
-          # Then clean up local deploy key
+          # Clean up local deploy key
           rm -f ~/.ssh/deploy_key

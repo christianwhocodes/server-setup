@@ -66,8 +66,10 @@ Use repository variables for fine-grained control:
 - ✅ Simple profiles - choose preset configurations or customize
 - ✅ Idempotent - safe to run multiple times without breaking existing setups
 - ✅ User management - automatically create users with optional sudo access
-- ✅ No manual SSH or script copying required
+- ✅ No manual SSH required - scripts executed directly from GitHub
+- ✅ No temporary files - scripts run directly via curl from raw GitHub URLs
 - ✅ Modular scripts - each tool in its own file for easy maintenance
+- ✅ Version-controlled execution - always uses scripts from the specific commit
 
 ## 📋 Prerequisites
 
@@ -256,16 +258,16 @@ foundry/
 │   ├── DEPLOYMENT_GUIDE.md        # Detailed deployment guide
 │   └── VARIABLES.md               # Configuration reference
 ├── scripts/
-│   ├── foundry-openssh-ufw.sh            # OpenSSH & UFW setup
-│   ├── foundry-packages.sh               # Development packages
-│   ├── foundry-nginx.sh                  # Nginx web server
-│   ├── foundry-certbot.sh                # SSL certificates
-│   ├── foundry-postgres.sh               # PostgreSQL database
-│   ├── foundry-code-server.sh            # Code-server (unified)
-│   ├── foundry-uv.sh                     # Python package manager
-│   ├── foundry-nvm.sh                    # Node.js version manager
-│   ├── foundry-repos.sh                  # Repos directory
-│   └── foundry-git-ssh.sh                # Git & SSH keys
+│   ├── openssh-ufw.sh            # OpenSSH & UFW setup
+│   ├── packages.sh               # Development packages
+│   ├── nginx.sh                  # Nginx web server
+│   ├── certbot.sh                # SSL certificates
+│   ├── postgres.sh               # PostgreSQL database
+│   ├── code-server.sh            # Code-server (unified)
+│   ├── uv.sh                     # Python package manager
+│   ├── nvm.sh                    # Node.js version manager
+│   ├── repos.sh                  # Repos directory
+│   └── git-ssh.sh                # Git & SSH keys
 └── README.md                     # This file
 ```
 

@@ -14,8 +14,8 @@ NC='\033[0m'
 
 # Required environment variables
 TARGET_USER="${TARGET_USER:?TARGET_USER environment variable is required}"
-CODE_SERVER_PORT_START="${CODE_SERVER_PORT_START:-8080}"
-CODE_SERVER_PORT_END="${CODE_SERVER_PORT_END:-8100}"
+CODE_SERVER_PORT_START="${CODE_SERVER_PORT_START:?CODE_SERVER_PORT_START environment variable is required}"
+CODE_SERVER_PORT_END="${CODE_SERVER_PORT_END:?CODE_SERVER_PORT_END environment variable is required}"
 
 validate_port_range() {
   local start=$1

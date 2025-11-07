@@ -97,7 +97,7 @@ Control which system-level services to install (requires SUDO_ACCESS_USER):
 - **Description:** Setup OpenSSH and UFW firewall
 - **Type:** Boolean (`true` or `false`)
 - **Default:** `false`
-- **Script:** `scripts/foundry-openssh-ufw.sh`
+- **Script:** `scripts/openssh-ufw.sh`
 - **Use case:** Configure firewall and SSH settings
 
 #### SETUP_PACKAGES
@@ -105,7 +105,7 @@ Control which system-level services to install (requires SUDO_ACCESS_USER):
 - **Description:** Install necessary development packages
 - **Type:** Boolean (`true` or `false`)
 - **Default:** `false`
-- **Script:** `scripts/foundry-packages.sh`
+- **Script:** `scripts/packages.sh`
 - **Installs:** git, curl, wget, build-essential, and development libraries
 
 #### SETUP_NGINX
@@ -113,7 +113,7 @@ Control which system-level services to install (requires SUDO_ACCESS_USER):
 - **Description:** Install and configure Nginx web server
 - **Type:** Boolean (`true` or `false`)
 - **Default:** `false`
-- **Script:** `scripts/foundry-nginx.sh`
+- **Script:** `scripts/nginx.sh`
 - **Use case:** Web server and reverse proxy setup
 
 #### SETUP_CERTBOT
@@ -121,7 +121,7 @@ Control which system-level services to install (requires SUDO_ACCESS_USER):
 - **Description:** Install Certbot for SSL certificates
 - **Type:** Boolean (`true` or `false`)
 - **Default:** `false`
-- **Script:** `scripts/foundry-certbot.sh`
+- **Script:** `scripts/certbot.sh`
 - **Requires:** snapd to be available on the server
 
 #### SETUP_CODE_SERVER
@@ -129,7 +129,7 @@ Control which system-level services to install (requires SUDO_ACCESS_USER):
 - **Description:** Setup code-server (system install + user config + service enable)
 - **Type:** Boolean (`true` or `false`)
 - **Default:** `false`
-- **Script:** `scripts/foundry-code-server.sh`
+- **Script:** `scripts/code-server.sh`
 - **Use case:** Complete code-server setup with secure configuration
 - **Note:** Config file owned by sudo user, target user has read-only access
 
@@ -138,7 +138,7 @@ Control which system-level services to install (requires SUDO_ACCESS_USER):
 - **Description:** Install and configure PostgreSQL database
 - **Type:** Boolean (`true` or `false`)
 - **Default:** `false`
-- **Script:** `scripts/foundry-postgres.sh`
+- **Script:** `scripts/postgres.sh`
 - **Installs:** PostgreSQL server and client tools
 
 ### User Module Variables
@@ -150,7 +150,7 @@ Control which user-level tools to install (no sudo required):
 - **Description:** Install uv Python package manager
 - **Type:** Boolean (`true` or `false`)
 - **Default:** `false`
-- **Script:** `scripts/foundry-uv.sh`
+- **Script:** `scripts/uv.sh`
 - **Also installs:** Latest Python version via uv
 
 #### SETUP_NVM
@@ -158,7 +158,7 @@ Control which user-level tools to install (no sudo required):
 - **Description:** Install nvm Node.js version manager
 - **Type:** Boolean (`true` or `false`)
 - **Default:** `false`
-- **Script:** `scripts/foundry-nvm.sh`
+- **Script:** `scripts/nvm.sh`
 - **Also installs:** Latest Node.js and npm
 
 #### SETUP_REPOS_DIR
@@ -166,7 +166,7 @@ Control which user-level tools to install (no sudo required):
 - **Description:** Create ~/repos directory for projects
 - **Type:** Boolean (`true` or `false`)
 - **Default:** `false`
-- **Script:** `scripts/foundry-repos.sh`
+- **Script:** `scripts/repos.sh`
 - **Creates:** `~/repos` folder in user's home directory
 
 #### SETUP_GIT_SSH
@@ -174,7 +174,7 @@ Control which user-level tools to install (no sudo required):
 - **Description:** Setup Git configuration and SSH keys
 - **Type:** Boolean (`true` or `false`)
 - **Default:** `false`
-- **Script:** `scripts/foundry-git-ssh.sh`
+- **Script:** `scripts/git-ssh.sh`
 - **Requires:** Git user name and email must be provided in workflow inputs when this is enabled
 - **Creates:** ed25519 SSH key pair for Git operations
 
@@ -217,18 +217,18 @@ To create a custom setup with only Nginx, PostgreSQL, and user tools:
 
 Each module corresponds to a specific script file in the `scripts/` directory:
 
-| Module Variable     | Script File              | Requires Sudo |
-| ------------------- | ------------------------ | ------------- |
-| `SETUP_OPENSSH_UFW` | `foundry-openssh-ufw.sh` | Yes           |
-| `SETUP_PACKAGES`    | `foundry-packages.sh`    | Yes           |
-| `SETUP_NGINX`       | `foundry-nginx.sh`       | Yes           |
-| `SETUP_CERTBOT`     | `foundry-certbot.sh`     | Yes           |
-| `SETUP_CODE_SERVER` | `foundry-code-server.sh` | Yes           |
-| `SETUP_POSTGRES`    | `foundry-postgres.sh`    | Yes           |
-| `SETUP_UV`          | `foundry-uv.sh`          | No            |
-| `SETUP_NVM`         | `foundry-nvm.sh`         | No            |
-| `SETUP_REPOS_DIR`   | `foundry-repos.sh`       | No            |
-| `SETUP_GIT_SSH`     | `foundry-git-ssh.sh`     | No            |
+| Module Variable     | Script File      | Requires Sudo |
+| ------------------- | ---------------- | ------------- |
+| `SETUP_OPENSSH_UFW` | `openssh-ufw.sh` | Yes           |
+| `SETUP_PACKAGES`    | `packages.sh`    | Yes           |
+| `SETUP_NGINX`       | `nginx.sh`       | Yes           |
+| `SETUP_CERTBOT`     | `certbot.sh`     | Yes           |
+| `SETUP_CODE_SERVER` | `code-server.sh` | Yes           |
+| `SETUP_POSTGRES`    | `postgres.sh`    | Yes           |
+| `SETUP_UV`          | `uv.sh`          | No            |
+| `SETUP_NVM`         | `nvm.sh`         | No            |
+| `SETUP_REPOS_DIR`   | `repos.sh`       | No            |
+| `SETUP_GIT_SSH`     | `git-ssh.sh`     | No            |
 
 ---
 
