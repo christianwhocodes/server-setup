@@ -558,7 +558,7 @@ Re-run workflow with specific modules to update:
 
 Each script in `scripts/` is standalone and can be modified:
 
-1. Edit the specific script file (e.g., `scripts/nginx.sh`)
+1. Edit the specific script file (e.g., `scripts/foundry-nginx.sh`)
 2. Commit changes to your fork
 3. Re-run the workflow
 4. Only that module's script will be updated on the server
