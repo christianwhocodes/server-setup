@@ -1,7 +1,7 @@
 #!/bin/bash
-# Code-server setup script (system install + user config + service enable)
+# Code-server user configuration script
 # This script is idempotent and safe to run multiple times
-# Must be run as sudo user, but configures for TARGET_USER
+# Must be run as the target user (not sudo)
 
 set -e
 export DEBIAN_FRONTEND=noninteractive
@@ -13,7 +13,6 @@ YELLOW='\033[1;33m'
 NC='\033[0m'
 
 # Required environment variables
-TARGET_USER="${TARGET_USER:?TARGET_USER environment variable is required}"
 CODE_SERVER_PORT_START="${CODE_SERVER_PORT_START:?CODE_SERVER_PORT_START environment variable is required}"
 CODE_SERVER_PORT_END="${CODE_SERVER_PORT_END:?CODE_SERVER_PORT_END environment variable is required}"
 
@@ -51,42 +50,12 @@ generate_random_password() {
   tr -dc 'A-Za-z0-9!@#$%^&*' </dev/urandom | head -c 24
 }
 
-code_server_setup() {
-  echo -e "${BLUE}Setting up code-server for user: $TARGET_USER${NC}"
+code_server_configure() {
+  echo -e "${BLUE}Configuring code-server for user: $USER${NC}"
   
   validate_port_range "$CODE_SERVER_PORT_START" "$CODE_SERVER_PORT_END"
 
-  # Get target user's home directory
-  TARGET_USER_HOME=$(eval echo ~$TARGET_USER)
-  
-  if [ ! -d "$TARGET_USER_HOME" ]; then
-    echo -e "${RED}❌ Target user home directory not found: $TARGET_USER_HOME${NC}"
-    exit 1
-  fi
-
-  # Step 1: Install code-server system-wide (if not already installed)
-  echo -e "${BLUE}Step 1: Installing code-server system-wide...${NC}"
-  if command -v code-server >/dev/null 2>&1; then
-    echo -e "${GREEN}✅ code-server already installed${NC}"
-  else
-    if ! curl -fsSL https://code-server.dev/install.sh | sh; then
-      echo -e "${RED}❌ Failed to install code-server${NC}"
-      exit 1
-    fi
-
-    # Verify code-server was installed
-    if ! command -v code-server >/dev/null 2>&1; then
-      echo -e "${RED}❌ code-server command not found after installation${NC}"
-      exit 1
-    fi
-
-    echo -e "${GREEN}✅ code-server installed successfully${NC}"
-  fi
-
-  # Step 2: Configure code-server for target user
-  echo -e "${BLUE}Step 2: Configuring code-server for $TARGET_USER...${NC}"
-  
-  CONFIG_DIR="$TARGET_USER_HOME/.config/code-server"
+  CONFIG_DIR="$HOME/.config/code-server"
   CONFIG_FILE="$CONFIG_DIR/config.yaml"
   
   # Check if config already exists
@@ -94,7 +63,7 @@ code_server_setup() {
     # Get existing port
     EXISTING_PORT=$(grep "bind-addr:" "$CONFIG_FILE" | awk -F: '{print $NF}' | tr -d ' ')
     
-    # Check if existing port is in use
+    # Check if existing port is in use by another service
     if [ -n "$EXISTING_PORT" ] && ! is_port_in_use "$EXISTING_PORT"; then
       echo -e "${GREEN}✅ Using existing code-server config on port $EXISTING_PORT${NC}"
       CODE_SERVER_PORT="$EXISTING_PORT"
@@ -120,6 +89,8 @@ auth: password
 password: $CODE_SERVER_PASSWORD
 cert: false
 EOF
+      chmod 700 "$CONFIG_DIR"
+      chmod 600 "$CONFIG_FILE"
       echo -e "${GREEN}✅ code-server configuration updated${NC}"
     fi
   else
@@ -143,43 +114,15 @@ auth: password
 password: $CODE_SERVER_PASSWORD
 cert: false
 EOF
+    chmod 700 "$CONFIG_DIR"
+    chmod 600 "$CONFIG_FILE"
     echo -e "${GREEN}✅ code-server configuration created${NC}"
   fi
 
-  # Step 3: Set proper permissions (owned by target user)
-  echo -e "${BLUE}Step 3: Setting permissions...${NC}"
-    
-  # Set ownership of the config directory and files to the target user
-  chown -R "$TARGET_USER":"$TARGET_USER" "$CONFIG_DIR"
-  chmod 700 "$CONFIG_DIR"
-  chmod 600 "$CONFIG_FILE"
-  
-  echo -e "${GREEN}✅ Permissions set (target user owns config)${NC}"
-
-  # Step 4: Enable and start code-server service for target user
-  echo -e "${BLUE}Step 4: Enabling code-server service for $TARGET_USER...${NC}"
-  
-  # Wait a moment for systemd to recognize the service
-  sleep 2
-  
-  # Check if service file exists
-  if [[ ! -f "/lib/systemd/system/code-server@.service" ]] && [[ ! -f "/usr/lib/systemd/system/code-server@.service" ]]; then
-    echo -e "${YELLOW}⚠️  Service file not found. Cannot enable service automatically.${NC}"
-    echo -e "${YELLOW}   Run manually: sudo systemctl enable --now code-server@$TARGET_USER${NC}"
-  else
-    # Enable and start the service
-    if systemctl enable --now "code-server@$TARGET_USER" 2>/dev/null; then
-      echo -e "${GREEN}✅ code-server service enabled and started for $TARGET_USER${NC}"
-    else
-      echo -e "${YELLOW}⚠️  Could not enable code-server service${NC}"
-      echo -e "${YELLOW}   Run manually: sudo systemctl enable --now code-server@$TARGET_USER${NC}"
-    fi
-  fi
-
-  echo -e "${GREEN}✅ code-server setup completed for $TARGET_USER${NC}"
+  echo -e "${GREEN}✅ code-server configuration completed for $USER${NC}"
 }
 
 # Run if executed directly
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-  code_server_setup
+  code_server_configure
 fi

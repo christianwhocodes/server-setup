@@ -50,7 +50,7 @@ Use repository variables for fine-grained control:
 - 🛠️ **Development Packages** - Essential build tools and libraries
 - 🌐 **Nginx** - Web server and reverse proxy
 - 🔒 **Certbot** - SSL certificate management
-- 💻 **Code Server** - VS Code in the browser (system install + user config + service)
+- 💻 **Code Server** - VS Code in the browser (three-step setup: install, configure, enable)
 - 🐘 **PostgreSQL** - Relational database server
 
 **User Modules** (per-user):
@@ -254,7 +254,9 @@ foundry/
 │   ├── foundry-nginx.sh                  # Nginx web server
 │   ├── foundry-certbot.sh                # SSL certificates
 │   ├── foundry-postgres.sh               # PostgreSQL database
-│   ├── foundry-code-server.sh            # Code-server (unified)
+│   ├── foundry-code-server-install.sh            # Code-server install (step 1)
+│   ├── foundry-code-server-config.sh     # Code-server config (step 2)
+│   ├── foundry-code-server-service.sh    # Code-server service (step 3)
 │   ├── foundry-uv.sh                     # Python package manager
 │   ├── foundry-nvm.sh                    # Node.js version manager
 │   ├── foundry-repos.sh                  # Repos directory

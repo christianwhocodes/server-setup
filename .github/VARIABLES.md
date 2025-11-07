@@ -129,9 +129,15 @@ Control which system-level services to install (requires SUDO_ACCESS_USER):
 - **Description:** Setup code-server (system install + user config + service enable)
 - **Type:** Boolean (`true` or `false`)
 - **Default:** `false`
-- **Script:** `scripts/foundry-code-server.sh`
-- **Use case:** Complete code-server setup with secure configuration
-- **Note:** Config file owned by sudo user, target user has read-only access
+- **Scripts:**
+  - `scripts/foundry-code-server-install.sh` (system-wide installation)
+  - `scripts/foundry-code-server-config.sh` (user configuration)
+  - `scripts/foundry-code-server-service.sh` (service management)
+- **Use case:** Complete code-server setup with three-step process
+- **Note:**
+  1. Step 1 (sudo): Installs code-server system-wide
+  2. Step 2 (target user): Creates user-specific configuration
+  3. Step 3 (sudo): Enables and starts the systemd service
 
 #### SETUP_POSTGRES
 
@@ -217,18 +223,18 @@ To create a custom setup with only Nginx, PostgreSQL, and user tools:
 
 Each module corresponds to a specific script file in the `scripts/` directory:
 
-| Module Variable     | Script File              | Requires Sudo |
-| ------------------- | ------------------------ | ------------- |
-| `SETUP_OPENSSH_UFW` | `foundry-openssh-ufw.sh` | Yes           |
-| `SETUP_PACKAGES`    | `foundry-packages.sh`    | Yes           |
-| `SETUP_NGINX`       | `foundry-nginx.sh`       | Yes           |
-| `SETUP_CERTBOT`     | `foundry-certbot.sh`     | Yes           |
-| `SETUP_CODE_SERVER` | `foundry-code-server.sh` | Yes           |
-| `SETUP_POSTGRES`    | `foundry-postgres.sh`    | Yes           |
-| `SETUP_UV`          | `foundry-uv.sh`          | No            |
-| `SETUP_NVM`         | `foundry-nvm.sh`         | No            |
-| `SETUP_REPOS_DIR`   | `foundry-repos.sh`       | No            |
-| `SETUP_GIT_SSH`     | `foundry-git-ssh.sh`     | No            |
+| Module Variable     | Script File(s)                                                                                                    | Requires Sudo |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------- |
+| `SETUP_OPENSSH_UFW` | `foundry-openssh-ufw.sh`                                                                                          | Yes           |
+| `SETUP_PACKAGES`    | `foundry-packages.sh`                                                                                             | Yes           |
+| `SETUP_NGINX`       | `foundry-nginx.sh`                                                                                                | Yes           |
+| `SETUP_CERTBOT`     | `foundry-certbot.sh`                                                                                              | Yes           |
+| `SETUP_CODE_SERVER` | `foundry-code-server-install.sh`, `foundry-code-server-config.sh`, `foundry-code-server-service.sh` (three steps) | Yes + User    |
+| `SETUP_POSTGRES`    | `foundry-postgres.sh`                                                                                             | Yes           |
+| `SETUP_UV`          | `foundry-uv.sh`                                                                                                   | No            |
+| `SETUP_NVM`         | `foundry-nvm.sh`                                                                                                  | No            |
+| `SETUP_REPOS_DIR`   | `foundry-repos.sh`                                                                                                | No            |
+| `SETUP_GIT_SSH`     | `foundry-git-ssh.sh`                                                                                              | No            |
 
 ---
 
@@ -253,11 +259,19 @@ Each module corresponds to a specific script file in the `scripts/` directory:
 
 When `SETUP_CODE_SERVER` is enabled:
 
-- The system installs code-server globally
-- Creates user-specific config in `~/.config/code-server/`
-- Config file is owned by sudo user (root) for security
-- Target user can read config but cannot modify it
-- Service runs as: `code-server@[target_user]`
-- Password is protected from unauthorized changes
+1. **Step 1 (System Install):** The system installs code-server globally as sudo
+2. **Step 2 (User Config):** Target user creates their own config in `~/.config/code-server/`
+   - Config file is owned by the target user
+   - Permissions set to 700 (directory) and 600 (config file)
+   - Port is dynamically selected from available ports
+   - Secure random password is generated
+3. **Step 3 (Service Enable):** Sudo user enables and starts the service
+   - Service runs as: `code-server@[target_user]`
+   - Systemd manages the service lifecycle
 
-This ensures that only administrators can modify the code-server configuration while still allowing the service to run properly for the target user.
+This three-step approach ensures:
+
+- Clean separation between system installation and user configuration
+- Target user has full control over their configuration
+- Service is properly managed by systemd
+- Each step is idempotent and can be run independently

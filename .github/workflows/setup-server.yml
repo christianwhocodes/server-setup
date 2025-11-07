@@ -364,23 +364,50 @@ jobs:
             echo "✅ PostgreSQL setup completed"
           ENDSSH
 
-      - name: Setup Code Server
+      - name: Setup Code Server (Install)
+        if: steps.modules.outputs.setup_code_server == 'true'
+        run: |
+          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ secrets.SUDO_ACCESS_USER }}@${{ inputs.server_host }} bash <<'ENDSSH'
+            set -e
+            
+            echo "🚀 Installing code-server system-wide..."
+            if [[ $EUID -eq 0 ]]; then
+              bash /tmp/foundry-code-server-install.sh
+            elif command -v sudo >/dev/null 2>&1; then
+              sudo bash /tmp/foundry-code-server-install.sh
+            fi
+            echo "✅ Code-server installation completed"
+          ENDSSH
+
+      - name: Setup Code Server (Configure)
+        if: steps.modules.outputs.setup_code_server == 'true'
+        run: |
+          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ inputs.target_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
+            set -e
+            
+            export CODE_SERVER_PORT_START="${{ vars.CODE_SERVER_PORT_START || '8080' }}"
+            export CODE_SERVER_PORT_END="${{ vars.CODE_SERVER_PORT_END || '8100' }}"
+            
+            echo "🚀 Configuring code-server for user..."
+            bash /tmp/foundry-code-server-config.sh
+            echo "✅ Code-server configuration completed"
+          ENDSSH
+
+      - name: Setup Code Server (Enable Service)
         if: steps.modules.outputs.setup_code_server == 'true'
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ secrets.SUDO_ACCESS_USER }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
             
             export TARGET_USER="${{ inputs.target_user }}"
-            export CODE_SERVER_PORT_START="${{ vars.CODE_SERVER_PORT_START || '8080' }}"
-            export CODE_SERVER_PORT_END="${{ vars.CODE_SERVER_PORT_END || '8100' }}"
             
-            echo "🚀 Setting up code-server (system + user config + service)..."
+            echo "🚀 Enabling code-server service..."
             if [[ $EUID -eq 0 ]]; then
-              bash /tmp/foundry-code-server.sh
+              bash /tmp/foundry-code-server-service.sh
             elif command -v sudo >/dev/null 2>&1; then
-              sudo TARGET_USER="$TARGET_USER" CODE_SERVER_PORT_START="$CODE_SERVER_PORT_START" CODE_SERVER_PORT_END="$CODE_SERVER_PORT_END" bash /tmp/foundry-code-server.sh
+              sudo TARGET_USER="$TARGET_USER" bash /tmp/foundry-code-server-service.sh
             fi
-            echo "✅ Code-server setup completed"
+            echo "✅ Code-server service enabled"
           ENDSSH
 
       - name: Setup uv Python manager

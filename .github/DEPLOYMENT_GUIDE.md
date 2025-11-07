@@ -249,7 +249,7 @@ Git user email: john@example.com
 
 - All system modules installed (OpenSSH/UFW, packages, Nginx, Certbot, code-server, PostgreSQL)
 - All user modules configured (uv, nvm, repos, Git/SSH)
-- Code-server config created with secure permissions
+- Code-server installed system-wide, configured for user, and service enabled
 - Service enabled as `code-server@developer`
 
 **Note:** Git credentials are only required because this profile includes Git/SSH setup.
@@ -287,8 +287,8 @@ Setup profile: System Services Only
 
 **What happens:**
 
-- System modules: OpenSSH/UFW, packages, Nginx, Certbot, code-server (system install + user config for ubuntu), PostgreSQL
-- Code-server configured for the specified target user
+- System modules: OpenSSH/UFW, packages, Nginx, Certbot, code-server (three-step setup for ubuntu), PostgreSQL
+- Code-server installed, configured for the specified target user, and service enabled
 - No other user-specific tools installed
 
 ### Scenario 4: Add Single Module Using Custom Profile
@@ -358,14 +358,14 @@ The workflow uses **profiles** to simplify configuration:
 
 **System Modules**: Require `SUDO_ACCESS_USER` to be configured:
 
-| Module        | Script File              | Description                            |
-| ------------- | ------------------------ | -------------------------------------- |
-| OpenSSH & UFW | `foundry-openssh-ufw.sh` | Firewall and SSH configuration         |
-| Packages      | `foundry-packages.sh`    | Development tools and libraries        |
-| Nginx         | `foundry-nginx.sh`       | Web server with proxy configurations   |
-| Certbot       | `foundry-certbot.sh`     | SSL certificate management             |
-| Code Server   | `foundry-code-server.sh` | System install + user config + service |
-| PostgreSQL    | `foundry-postgres.sh`    | Database server                        |
+| Module        | Script File(s)                                                                                               | Description                                   |
+| ------------- | ------------------------------------------------------------------------------------------------------------ | --------------------------------------------- |
+| OpenSSH & UFW | `foundry-openssh-ufw.sh`                                                                                     | Firewall and SSH configuration                |
+| Packages      | `foundry-packages.sh`                                                                                        | Development tools and libraries               |
+| Nginx         | `foundry-nginx.sh`                                                                                           | Web server with proxy configurations          |
+| Certbot       | `foundry-certbot.sh`                                                                                         | SSL certificate management                    |
+| Code Server   | `foundry-code-server-install.sh`, `foundry-code-server-config.sh`, `foundry-code-server-service.sh` (3-step) | System install + user config + service enable |
+| PostgreSQL    | `foundry-postgres.sh`                                                                                        | Database server                               |
 
 **User Modules**: Run as the target user:
 
@@ -485,6 +485,10 @@ Each script file in `scripts/` can be run independently and multiple times safel
    ```
 3. Check service status: `sudo systemctl status code-server@[target_user]`
 4. Review service logs: `sudo journalctl -u code-server@[target_user] -n 50`
+5. Verify all three setup steps completed:
+   - System installation (sudo)
+   - User configuration (target user)
+   - Service enablement (sudo)
 
 ## Advanced Usage
 
