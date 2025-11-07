@@ -81,7 +81,7 @@ jobs:
               PACKAGES="true"
               NGINX="true"
               CERTBOT="true"
-              CODE_SERVER="false"
+              CODE_SERVER="true"
               POSTGRES="true"
               UV="true"
               NVM="true"
@@ -93,7 +93,7 @@ jobs:
               PACKAGES="true"
               NGINX="true"
               CERTBOT="true"
-              CODE_SERVER="false"
+              CODE_SERVER="true"
               POSTGRES="true"
               ;;
             "User Tools Only")
