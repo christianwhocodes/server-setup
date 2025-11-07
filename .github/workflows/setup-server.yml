@@ -375,9 +375,9 @@ jobs:
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ secrets.SUDO_ACCESS_USER }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
             
-            TARGET_USER="${{ inputs.target_user }}"
-            CODE_SERVER_PORT_START="${{ vars.CODE_SERVER_PORT_START || '8080' }}"
-            CODE_SERVER_PORT_END="${{ vars.CODE_SERVER_PORT_END || '8100' }}"
+            export TARGET_USER="${{ inputs.target_user }}"
+            export CODE_SERVER_PORT_START="${{ vars.CODE_SERVER_PORT_START || '8080' }}"
+            export CODE_SERVER_PORT_END="${{ vars.CODE_SERVER_PORT_END || '8100' }}"
             SCRIPT_URL="https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/scripts/code-server.sh"
             
             echo "🚀 Setting up code-server (system + user config + service)..."
@@ -429,8 +429,8 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ inputs.target_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
-            GIT_USER_NAME="${{ inputs.git_user_name }}"
-            GIT_USER_EMAIL="${{ inputs.git_user_email }}"
+            export GIT_USER_NAME="${{ inputs.git_user_name }}"
+            export GIT_USER_EMAIL="${{ inputs.git_user_email }}"
             SCRIPT_URL="https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/scripts/git-ssh.sh"
             
             echo "🚀 Setting up Git and SSH..."
