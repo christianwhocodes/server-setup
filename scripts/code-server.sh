@@ -148,11 +148,13 @@ EOF
 
   # Step 3: Set proper permissions (sudo user owns, target user can only read)
   echo -e "${BLUE}Step 3: Setting permissions...${NC}"
-  
-  # Make config directory readable by target user but owned by sudo user
-  chown -R root:root "$CONFIG_DIR"
-  chmod 755 "$CONFIG_DIR"
-  chmod 600 "$CONFIG_FILE"
+    
+  # Set ownership of the config directory to the target user
+  chown -R "$TARGET_USER":"$TARGET_USER" "$CONFIG_DIR"
+
+  # Set the config.yaml file to be owned by root and readable by the user
+  chown root:"$TARGET_USER" "$CONFIG_FILE"
+  chmod 640 "$CONFIG_FILE"
   
   echo -e "${GREEN}✅ Permissions set (sudo user owns, target user can read)${NC}"
 
