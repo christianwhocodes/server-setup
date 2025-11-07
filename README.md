@@ -1,4 +1,4 @@
-# 🏗️ Foundry
+# 🏗️ Server Setup 
 
 Automated, modular, idempotent server setup via GitHub Actions for development and infrastructure tooling.
 
@@ -19,17 +19,17 @@ All scripts are idempotent: safe to re-run; they skip work when already satisfie
 
 Select one profile when dispatching the workflow:
 
-1. Full Development Server  
+1. **_Full Development Server_**  
    System: OpenSSH/UFW, Packages, Nginx, Certbot, Code-server, PostgreSQL  
    User: uv, nvm, repos directory, Git + SSH key
 
-2. System Services Only  
+3. **_System Services Only_**  
    System modules only (includes code-server configured for target user)
 
-3. User Tools Only  
+4. **_User Tools Only_**  
    User modules only (uv, nvm, repos, Git + SSH key)
 
-4. Custom (use repository variables)  
+5. **_Custom (use repository variables)_**  
    Boolean repository variables (`SETUP_*`) decide which modules run.
 
 ## 🧩 Inputs (workflow_dispatch)
