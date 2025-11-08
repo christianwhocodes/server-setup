@@ -1,10 +1,10 @@
-# 🏗️ Server Setup 
+# 🏗️ Automate Server Setup
 
 Automated, modular, idempotent server setup via GitHub Actions for development and infrastructure tooling.
 
 ## 🧭 Overview
 
-The workflow (`.github/workflows/setup-server.yml`) connects to your server over SSH using a deployment private key, uploads the bash scripts in `scripts/`, and runs only the modules selected by a profile or by custom repository variables.
+The workflow (`.github/workflows/server-setup.yml`) connects to your server over SSH using a deployment private key, uploads the bash scripts in `scripts/`, and runs only the modules selected by a profile or by custom repository variables.
 
 All scripts are idempotent: safe to re-run; they skip work when already satisfied.
 
@@ -13,7 +13,7 @@ All scripts are idempotent: safe to re-run; they skip work when already satisfie
 1. Fork this repository to your own GitHub account (required to add Secrets/Variables).
 2. Add repository Secrets: `SERVER_SSH_KEY`, `SUDO_ACCESS_USER`.
 3. (Optional) Add Variables: `NVM_VERSION`, `CODE_SERVER_PORT_START`, `CODE_SERVER_PORT_END`, or any `SETUP_*` for the Custom profile.
-4. Run the workflow: Actions → Setup Server → choose a profile and inputs.
+4. Run the workflow: Actions → Server Setup → choose a profile and inputs.
 
 ## 🎛️ Profiles
 
@@ -23,13 +23,13 @@ Select one profile when dispatching the workflow:
    System: OpenSSH/UFW, Packages, Nginx, Certbot, Code-server, PostgreSQL  
    User: uv, nvm, repos directory, Git + SSH key
 
-3. **_System Services Only_**  
+2. **_System Services Only_**  
    System modules only (includes code-server configured for target user)
 
-4. **_User Tools Only_**  
+3. **_User Tools Only_**  
    User modules only (uv, nvm, repos, Git + SSH key)
 
-5. **_Custom (use repository variables)_**  
+4. **_Custom (use repository variables)_**  
    Boolean repository variables (`SETUP_*`) decide which modules run.
 
 ## 🧩 Inputs (workflow_dispatch)
@@ -139,11 +139,11 @@ Safe to add modules later by re-running workflow with Custom profile and enablin
 
 ```
 .github/
-  workflows/setup-server.yml
+  workflows/server-setup.yml
   DEPLOYMENT_GUIDE.md
   VARIABLES.md
 scripts/
-  foundry-*.sh
+  *.sh
 README.md
 ```
 

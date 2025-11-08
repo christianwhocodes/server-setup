@@ -2,7 +2,7 @@
 
 🍴 Before you begin: fork this repository to your GitHub account so you can add Secrets and Variables in your own copy.
 
-This document defines configuration surfaces consumed by `setup-server.yml`.
+This document defines configuration surfaces consumed by `server-setup.yml`.
 
 ## 🔐 Secrets (Required)
 
@@ -46,16 +46,16 @@ User (run as `target_user`):
 
 | Variable          | Script(s)                                  | Notes                                                       |
 | ----------------- | ------------------------------------------ | ----------------------------------------------------------- |
-| SETUP_OPENSSH_UFW | foundry-openssh-ufw.sh                     | Adds OpenSSH allow rule; enables UFW only if rule confirmed |
-| SETUP_PACKAGES    | foundry-packages.sh                        | Development toolchain & libs                                |
-| SETUP_NGINX       | foundry-nginx.sh                           | Installs, enables service; creates proxy snippets only      |
-| SETUP_CERTBOT     | foundry-certbot.sh                         | Requires pre-installed snapd                                |
+| SETUP_OPENSSH_UFW | openssh-ufw.sh                             | Adds OpenSSH allow rule; enables UFW only if rule confirmed |
+| SETUP_PACKAGES    | packages.sh                                | Development toolchain & libs                                |
+| SETUP_NGINX       | nginx.sh                                   | Installs, enables service; creates proxy snippets only      |
+| SETUP_CERTBOT     | certbot.sh                                 | Requires pre-installed snapd                                |
 | SETUP_CODE_SERVER | install, config, service scripts (3 files) | Port/password generation in user config step                |
-| SETUP_POSTGRES    | foundry-postgres.sh                        | Enables & starts service                                    |
-| SETUP_UV          | foundry-uv.sh                              | Installs uv + Python if missing                             |
-| SETUP_NVM         | foundry-nvm.sh                             | Installs Node + updates npm                                 |
-| SETUP_REPOS_DIR   | foundry-repos.sh                           | Ensures ~/repos                                             |
-| SETUP_GIT_SSH     | foundry-git-ssh.sh                         | Needs workflow inputs git_user_name/email                   |
+| SETUP_POSTGRES    | postgres.sh                                | Enables & starts service                                    |
+| SETUP_UV          | uv.sh                                      | Installs uv + Python if missing                             |
+| SETUP_NVM         | nvm.sh                                     | Installs Node + updates npm                                 |
+| SETUP_REPOS_DIR   | repos.sh                                   | Ensures ~/repos                                             |
+| SETUP_GIT_SSH     | git-ssh.sh                                 | Needs workflow inputs git_user_name/email                   |
 
 ## 💻🔑 Code-server Port + Password Logic
 

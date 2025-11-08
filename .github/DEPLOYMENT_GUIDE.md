@@ -1,6 +1,6 @@
 # 🚀 Deployment Guide
 
-How to run the Foundry GitHub Actions workflow to configure an Ubuntu server using modular bash scripts.
+How to run the GitHub Actions workflow to configure an Ubuntu server using modular bash scripts.
 
 ## ✅ Prerequisites
 
@@ -56,7 +56,7 @@ Note: There is no “create user” toggle—creation is automatic if the user d
 8. Conditional execution of each selected module.
 9. Credential retrieval (code-server port/password, SSH public key) if applicable.
 10. Summary output.
-11. Remote cleanup (`/tmp/foundry-*.sh`) and local key removal.
+11. Remote cleanup (`/tmp/*.sh`) and local key removal.
 
 ## 💻 Code-server Steps
 
@@ -93,7 +93,7 @@ sudo apt update && sudo apt install -y snapd
 
 ## 🔥🧱 Firewall Safety
 
-`foundry-openssh-ufw.sh`:
+`openssh-ufw.sh`:
 
 - Adds `OpenSSH` allow rule if absent.
 - Only enables UFW after confirming the rule, mitigating lockout risk.
@@ -176,8 +176,8 @@ Add new scripts under `scripts/` following current pattern:
 
 Located in `scripts/`:
 
-- System: `foundry-openssh-ufw.sh`, `foundry-packages.sh`, `foundry-nginx.sh`, `foundry-certbot.sh`, `foundry-postgres.sh`, `foundry-code-server-*.sh`
-- User: `foundry-uv.sh`, `foundry-nvm.sh`, `foundry-repos.sh`, `foundry-git-ssh.sh`
+- System: `openssh-ufw.sh`, `packages.sh`, `nginx.sh`, `certbot.sh`, `postgres.sh`, `code-server-*.sh`
+- User: `uv.sh`, `nvm.sh`, `repos.sh`, `git-ssh.sh`
 
 ## 🙋 Getting Help
 

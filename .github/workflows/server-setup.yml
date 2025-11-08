@@ -1,4 +1,4 @@
-name: Setup Server
+name: Server Setup
 
 on:
   workflow_dispatch:
@@ -267,6 +267,7 @@ jobs:
           ENDSSH
 
       - name: Upload scripts to server
+        id: upload-scripts
         run: |
           if [[ "${{ steps.validate.outputs.has_system_modules }}" == "true" ]]; then
             SSH_USER="${{ secrets.SUDO_ACCESS_USER }}"
@@ -274,9 +275,19 @@ jobs:
             SSH_USER="${{ inputs.target_user }}"
           fi
 
-          scp -i ~/.ssh/deploy_key -P ${{ inputs.server_port }} \
-            scripts/foundry-*.sh \
-            ${SSH_USER}@${{ inputs.server_host }}:/tmp/
+          DATE=$(date -u +%Y%m%d_%H%M%S)
+          SETUP_DIR="server-setup-$DATE-UTC"
+          REMOTE_DIR="/tmp/$SETUP_DIR"
+
+          # Create isolated dated directory
+          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${SSH_USER}@${{ inputs.server_host }} "mkdir -p '$REMOTE_DIR'"
+
+          # Copy scripts into that directory
+          scp -i ~/.ssh/deploy_key -P ${{ inputs.server_port }} scripts/*.sh ${SSH_USER}@${{ inputs.server_host }}:"$REMOTE_DIR/"
+
+          # Expose outputs
+          echo "setup_dir_date=$DATE" >> $GITHUB_OUTPUT
+          echo "setup_dir=$REMOTE_DIR" >> $GITHUB_OUTPUT
 
       - name: Initial system update
         if: steps.validate.outputs.has_system_modules == 'true'
@@ -299,11 +310,12 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ secrets.SUDO_ACCESS_USER }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
+            SETUP_DIR="${{ steps.upload-scripts.outputs.setup_dir }}"
             echo "🚀 Setting up OpenSSH and UFW..."
             if [[ $EUID -eq 0 ]]; then
-              bash /tmp/foundry-openssh-ufw.sh
+              bash "$SETUP_DIR/openssh-ufw.sh"
             elif command -v sudo >/dev/null 2>&1; then
-              sudo bash /tmp/foundry-openssh-ufw.sh
+              sudo bash "$SETUP_DIR/openssh-ufw.sh"
             fi
             echo "✅ OpenSSH and UFW setup completed"
           ENDSSH
@@ -313,11 +325,12 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ secrets.SUDO_ACCESS_USER }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
+            SETUP_DIR="${{ steps.upload-scripts.outputs.setup_dir }}"
             echo "🚀 Installing necessary packages..."
             if [[ $EUID -eq 0 ]]; then
-              bash /tmp/foundry-packages.sh
+              bash "$SETUP_DIR/packages.sh"
             elif command -v sudo >/dev/null 2>&1; then
-              sudo bash /tmp/foundry-packages.sh
+              sudo bash "$SETUP_DIR/packages.sh"
             fi
             echo "✅ Necessary packages setup completed"
           ENDSSH
@@ -327,11 +340,12 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ secrets.SUDO_ACCESS_USER }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
+            SETUP_DIR="${{ steps.upload-scripts.outputs.setup_dir }}"
             echo "🚀 Setting up Nginx..."
             if [[ $EUID -eq 0 ]]; then
-              bash /tmp/foundry-nginx.sh
+              bash "$SETUP_DIR/nginx.sh"
             elif command -v sudo >/dev/null 2>&1; then
-              sudo bash /tmp/foundry-nginx.sh
+              sudo bash "$SETUP_DIR/nginx.sh"
             fi
             echo "✅ Nginx setup completed"
           ENDSSH
@@ -341,11 +355,12 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ secrets.SUDO_ACCESS_USER }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
+            SETUP_DIR="${{ steps.upload-scripts.outputs.setup_dir }}"
             echo "🚀 Setting up Certbot..."
             if [[ $EUID -eq 0 ]]; then
-              bash /tmp/foundry-certbot.sh
+              bash "$SETUP_DIR/certbot.sh"
             elif command -v sudo >/dev/null 2>&1; then
-              sudo bash /tmp/foundry-certbot.sh
+              sudo bash "$SETUP_DIR/certbot.sh"
             fi
             echo "✅ Certbot setup completed"
           ENDSSH
@@ -355,11 +370,12 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ secrets.SUDO_ACCESS_USER }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
+            SETUP_DIR="${{ steps.upload-scripts.outputs.setup_dir }}"
             echo "🚀 Setting up PostgreSQL..."
             if [[ $EUID -eq 0 ]]; then
-              bash /tmp/foundry-postgres.sh
+              bash "$SETUP_DIR/postgres.sh"
             elif command -v sudo >/dev/null 2>&1; then
-              sudo bash /tmp/foundry-postgres.sh
+              sudo bash "$SETUP_DIR/postgres.sh"
             fi
             echo "✅ PostgreSQL setup completed"
           ENDSSH
@@ -369,12 +385,12 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ secrets.SUDO_ACCESS_USER }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
-            
+            SETUP_DIR="${{ steps.upload-scripts.outputs.setup_dir }}"
             echo "🚀 Installing code-server system-wide..."
             if [[ $EUID -eq 0 ]]; then
-              bash /tmp/foundry-code-server-install.sh
+              bash "$SETUP_DIR/code-server-install.sh"
             elif command -v sudo >/dev/null 2>&1; then
-              sudo bash /tmp/foundry-code-server-install.sh
+              sudo bash "$SETUP_DIR/code-server-install.sh"
             fi
             echo "✅ Code-server installation completed"
           ENDSSH
@@ -384,12 +400,11 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ inputs.target_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
-            
+            SETUP_DIR="${{ steps.upload-scripts.outputs.setup_dir }}"
             export CODE_SERVER_PORT_START="${{ vars.CODE_SERVER_PORT_START || '8080' }}"
             export CODE_SERVER_PORT_END="${{ vars.CODE_SERVER_PORT_END || '8100' }}"
-            
             echo "🚀 Configuring code-server for user..."
-            bash /tmp/foundry-code-server-config.sh
+            bash "$SETUP_DIR/code-server-config.sh"
             echo "✅ Code-server configuration completed"
           ENDSSH
 
@@ -398,14 +413,13 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ secrets.SUDO_ACCESS_USER }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
-            
+            SETUP_DIR="${{ steps.upload-scripts.outputs.setup_dir }}"
             export TARGET_USER="${{ inputs.target_user }}"
-            
             echo "🚀 Enabling code-server service..."
             if [[ $EUID -eq 0 ]]; then
-              bash /tmp/foundry-code-server-service.sh
+              bash "$SETUP_DIR/code-server-service.sh"
             elif command -v sudo >/dev/null 2>&1; then
-              sudo TARGET_USER="$TARGET_USER" bash /tmp/foundry-code-server-service.sh
+              sudo TARGET_USER="$TARGET_USER" bash "$SETUP_DIR/code-server-service.sh"
             fi
             echo "✅ Code-server service enabled"
           ENDSSH
@@ -415,8 +429,9 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ inputs.target_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
+            SETUP_DIR="${{ steps.upload-scripts.outputs.setup_dir }}"
             echo "🚀 Setting up uv..."
-            bash /tmp/foundry-uv.sh
+            bash "$SETUP_DIR/uv.sh"
             echo "✅ uv setup completed"
           ENDSSH
 
@@ -425,10 +440,10 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ inputs.target_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
+            SETUP_DIR="${{ steps.upload-scripts.outputs.setup_dir }}"
             export NVM_VERSION="${{ vars.NVM_VERSION || 'v0.40.3' }}"
-            
             echo "🚀 Setting up nvm..."
-            bash /tmp/foundry-nvm.sh
+            bash "$SETUP_DIR/nvm.sh"
             echo "✅ nvm setup completed"
           ENDSSH
 
@@ -437,8 +452,9 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ inputs.target_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
+            SETUP_DIR="${{ steps.upload-scripts.outputs.setup_dir }}"
             echo "🚀 Setting up repos directory..."
-            bash /tmp/foundry-repos.sh
+            bash "$SETUP_DIR/repos.sh"
             echo "✅ repos directory setup completed"
           ENDSSH
 
@@ -447,11 +463,11 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ inputs.target_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
+            SETUP_DIR="${{ steps.upload-scripts.outputs.setup_dir }}"
             export GIT_USER_NAME="${{ inputs.git_user_name }}"
             export GIT_USER_EMAIL="${{ inputs.git_user_email }}"
-            
             echo "🚀 Setting up Git and SSH..."
-            bash /tmp/foundry-git-ssh.sh
+            bash "$SETUP_DIR/git-ssh.sh"
             echo "✅ Git and SSH setup completed"
           ENDSSH
 
@@ -562,14 +578,11 @@ jobs:
       - name: Cleanup
         if: always()
         run: |
-          # Determine which user uploaded the scripts
           if [[ "${{ steps.validate.outputs.has_system_modules }}" == "true" ]]; then
             SSH_USER="${{ secrets.SUDO_ACCESS_USER }}"
           else
             SSH_USER="${{ inputs.target_user }}"
           fi
-
-          # Clean up remote scripts first (while SSH key still exists)
-          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${SSH_USER}@${{ inputs.server_host }} "rm -f /tmp/foundry-*.sh" 2>/dev/null || true
-          # Then clean up local deploy key
+          # Remove remote dated directory
+          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${SSH_USER}@${{ inputs.server_host }} "rm -rf '${{ steps.upload-scripts.outputs.setup_dir }}'" 2>/dev/null || true
           rm -f ~/.ssh/deploy_key
