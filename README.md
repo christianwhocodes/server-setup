@@ -1,6 +1,6 @@
 # 🏗️ Automate Server Setup
 
-Automated, modular, idempotent server setup via GitHub Actions for development and infrastructure tooling.
+Automated, modular, idempotent server setup via GitHub Actions for infrastructure tooling.
 
 ## 🧭 Overview
 
