@@ -10,3 +10,9 @@ id_ed25519*
 id_dsa*
 id_ecdsa*
 deploy_key*
+
+# `.tmp` folder is intended for roughwork files. Ignore it.
+/.tmp/
+
+# Ignore environment variable files
+.env
