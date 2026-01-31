@@ -1,4 +1,4 @@
-name: Server Setup
+name: Server Bootstrap
 
 on:
   workflow_dispatch:
@@ -56,7 +56,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Determine modules to install
         id: modules
@@ -68,7 +68,6 @@ jobs:
           PACKAGES="false"
           NGINX="false"
           CERTBOT="false"
-          CODE_SERVER="false"
           POSTGRES="false"
           UV="false"
           NVM="false"
@@ -81,7 +80,6 @@ jobs:
               PACKAGES="true"
               NGINX="true"
               CERTBOT="true"
-              CODE_SERVER="true"
               POSTGRES="true"
               UV="true"
               NVM="true"
@@ -93,7 +91,6 @@ jobs:
               PACKAGES="true"
               NGINX="true"
               CERTBOT="true"
-              CODE_SERVER="true"
               POSTGRES="true"
               ;;
             "User Tools Only")
@@ -108,7 +105,6 @@ jobs:
               PACKAGES="${{ vars.SETUP_PACKAGES || 'false' }}"
               NGINX="${{ vars.SETUP_NGINX || 'false' }}"
               CERTBOT="${{ vars.SETUP_CERTBOT || 'false' }}"
-              CODE_SERVER="${{ vars.SETUP_CODE_SERVER || 'false' }}"
               POSTGRES="${{ vars.SETUP_POSTGRES || 'false' }}"
               UV="${{ vars.SETUP_UV || 'false' }}"
               NVM="${{ vars.SETUP_NVM || 'false' }}"
@@ -121,7 +117,6 @@ jobs:
           echo "setup_packages=$PACKAGES" >> $GITHUB_OUTPUT
           echo "setup_nginx=$NGINX" >> $GITHUB_OUTPUT
           echo "setup_certbot=$CERTBOT" >> $GITHUB_OUTPUT
-          echo "setup_code_server=$CODE_SERVER" >> $GITHUB_OUTPUT
           echo "setup_postgres=$POSTGRES" >> $GITHUB_OUTPUT
           echo "setup_uv=$UV" >> $GITHUB_OUTPUT
           echo "setup_nvm=$NVM" >> $GITHUB_OUTPUT
@@ -129,7 +124,7 @@ jobs:
           echo "setup_git_ssh=$GIT_SSH" >> $GITHUB_OUTPUT
 
           echo "📋 Selected Profile: $PROFILE"
-          echo "System Modules: openssh_ufw=$OPENSSH_UFW, packages=$PACKAGES, nginx=$NGINX, certbot=$CERTBOT, code_server=$CODE_SERVER, postgres=$POSTGRES"
+          echo "System Modules: openssh_ufw=$OPENSSH_UFW, packages=$PACKAGES, nginx=$NGINX, certbot=$CERTBOT, postgres=$POSTGRES"
           echo "User Modules: uv=$UV, nvm=$NVM, repos=$REPOS, git_ssh=$GIT_SSH"
 
       - name: Validate inputs
@@ -154,7 +149,6 @@ jobs:
              [[ "${{ steps.modules.outputs.setup_packages }}" == "true" ]] || \
              [[ "${{ steps.modules.outputs.setup_nginx }}" == "true" ]] || \
              [[ "${{ steps.modules.outputs.setup_certbot }}" == "true" ]] || \
-             [[ "${{ steps.modules.outputs.setup_code_server }}" == "true" ]] || \
              [[ "${{ steps.modules.outputs.setup_postgres }}" == "true" ]]; then
             echo "has_system_modules=true" >> $GITHUB_OUTPUT
             echo "⚠️  Note: System setup modules require SUDO_ACCESS_USER to be configured"
@@ -380,50 +374,6 @@ jobs:
             echo "✅ PostgreSQL setup completed"
           ENDSSH
 
-      - name: Setup Code Server (Install)
-        if: steps.modules.outputs.setup_code_server == 'true'
-        run: |
-          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ secrets.SUDO_ACCESS_USER }}@${{ inputs.server_host }} bash <<'ENDSSH'
-            set -e
-            SETUP_DIR="${{ steps.upload-scripts.outputs.setup_dir }}"
-            echo "🚀 Installing code-server system-wide..."
-            if [[ $EUID -eq 0 ]]; then
-              bash "$SETUP_DIR/code-server-install.sh"
-            elif command -v sudo >/dev/null 2>&1; then
-              sudo bash "$SETUP_DIR/code-server-install.sh"
-            fi
-            echo "✅ Code-server installation completed"
-          ENDSSH
-
-      - name: Setup Code Server (Configure)
-        if: steps.modules.outputs.setup_code_server == 'true'
-        run: |
-          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ inputs.target_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
-            set -e
-            SETUP_DIR="${{ steps.upload-scripts.outputs.setup_dir }}"
-            export CODE_SERVER_PORT_START="${{ vars.CODE_SERVER_PORT_START || '8080' }}"
-            export CODE_SERVER_PORT_END="${{ vars.CODE_SERVER_PORT_END || '8100' }}"
-            echo "🚀 Configuring code-server for user..."
-            bash "$SETUP_DIR/code-server-config.sh"
-            echo "✅ Code-server configuration completed"
-          ENDSSH
-
-      - name: Setup Code Server (Enable Service)
-        if: steps.modules.outputs.setup_code_server == 'true'
-        run: |
-          ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ secrets.SUDO_ACCESS_USER }}@${{ inputs.server_host }} bash <<'ENDSSH'
-            set -e
-            SETUP_DIR="${{ steps.upload-scripts.outputs.setup_dir }}"
-            export TARGET_USER="${{ inputs.target_user }}"
-            echo "🚀 Enabling code-server service..."
-            if [[ $EUID -eq 0 ]]; then
-              bash "$SETUP_DIR/code-server-service.sh"
-            elif command -v sudo >/dev/null 2>&1; then
-              sudo TARGET_USER="$TARGET_USER" bash "$SETUP_DIR/code-server-service.sh"
-            fi
-            echo "✅ Code-server service enabled"
-          ENDSSH
-
       - name: Setup uv Python manager
         if: steps.modules.outputs.setup_uv == 'true'
         run: |
@@ -441,7 +391,7 @@ jobs:
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ inputs.target_user }}@${{ inputs.server_host }} bash <<'ENDSSH'
             set -e
             SETUP_DIR="${{ steps.upload-scripts.outputs.setup_dir }}"
-            export NVM_VERSION="${{ vars.NVM_VERSION || 'v0.40.3' }}"
+            export NVM_VERSION="${{ vars.NVM_VERSION || 'v0.40.4' }}"
             echo "🚀 Setting up nvm..."
             bash "$SETUP_DIR/nvm.sh"
             echo "✅ nvm setup completed"
@@ -472,21 +422,12 @@ jobs:
           ENDSSH
 
       - name: Retrieve setup credentials
-        if: steps.modules.outputs.setup_code_server == 'true' || steps.modules.outputs.setup_git_ssh == 'true'
+        if: steps.modules.outputs.setup_git_ssh == 'true'
         id: credentials
         run: |
           TEMP_DIR=$(mktemp -d)
 
           ssh -i ~/.ssh/deploy_key -p ${{ inputs.server_port }} ${{ inputs.target_user }}@${{ inputs.server_host }} bash <<'ENDSSH' > "$TEMP_DIR/output"
-            # Extract only port and password from config
-            CONFIG_PATH="$HOME/.config/code-server/config.yaml"
-            if [ -f "$CONFIG_PATH" ]; then
-              PORT=$(grep "bind-addr:" "$CONFIG_PATH" | awk -F: '{print $NF}' | tr -d ' ')
-              PASSWORD=$(grep "password:" "$CONFIG_PATH" | awk -F: '{print $2}' | tr -d ' ')
-              echo "CODE_SERVER_PORT=$PORT"
-              echo "CODE_SERVER_PASSWORD=$PASSWORD"
-            fi
-
             # Get SSH public key
             KEY_PATH="$HOME/.ssh/id_ed25519.pub"
             if [ -f "$KEY_PATH" ]; then
@@ -497,19 +438,10 @@ jobs:
           ENDSSH
 
           # Parse output and set as masked outputs
-          PORT=""
-          PASSWORD=""
           SSH_KEY=""
 
           while IFS= read -r line; do
-            if [[ "$line" =~ ^CODE_SERVER_PORT= ]]; then
-              PORT=${line#*=}
-              echo "port=$PORT" >> $GITHUB_OUTPUT
-            elif [[ "$line" =~ ^CODE_SERVER_PASSWORD= ]]; then
-              PASSWORD=${line#*=}
-              echo "::add-mask::$PASSWORD"
-              echo "password=$PASSWORD" >> $GITHUB_OUTPUT
-            elif [[ "$line" == "SSH_PUBLIC_KEY<<EOF" ]]; then
+            if [[ "$line" == "SSH_PUBLIC_KEY<<EOF" ]]; then
               SSH_KEY=""
               while IFS= read -r keyline; do
                 [[ "$keyline" == "EOF" ]] && break
@@ -520,14 +452,6 @@ jobs:
           done < "$TEMP_DIR/output"
 
           # Validate we got the expected credentials
-          if [[ "${{ steps.modules.outputs.setup_code_server }}" == "true" ]]; then
-            if [[ -z "$PORT" || -z "$PASSWORD" ]]; then
-              echo "::error::Failed to retrieve code-server credentials"
-              echo "::error::Port: $PORT, Password: ${PASSWORD:+[set]}"
-              exit 1
-            fi
-          fi
-
           if [[ "${{ steps.modules.outputs.setup_git_ssh }}" == "true" ]]; then
             if [[ -z "$SSH_KEY" ]]; then
               echo "::error::Failed to retrieve SSH public key"
@@ -538,7 +462,7 @@ jobs:
           rm -rf "$TEMP_DIR"
 
       - name: Display setup summary
-        if: steps.modules.outputs.setup_code_server == 'true' || steps.modules.outputs.setup_git_ssh == 'true'
+        if: steps.modules.outputs.setup_git_ssh == 'true'
         run: |
           echo "## ✅ Setup Completed Successfully!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -548,14 +472,6 @@ jobs:
           echo "### 👤 Configured User" >> $GITHUB_STEP_SUMMARY
           echo "- **User:** ${{ inputs.target_user }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-
-          if [[ "${{ steps.modules.outputs.setup_code_server }}" == "true" ]]; then
-            echo "### 📋 Code Server Configuration" >> $GITHUB_STEP_SUMMARY
-            echo "- **Port:** ${{ steps.credentials.outputs.port }}" >> $GITHUB_STEP_SUMMARY
-            echo "- **Password:** \`${{ steps.credentials.outputs.password }}\`" >> $GITHUB_STEP_SUMMARY
-            echo "- **Access URL:** \`http://${{ inputs.server_host }}:${{ steps.credentials.outputs.port }}\`" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-          fi
 
           if [[ "${{ steps.modules.outputs.setup_git_ssh }}" == "true" ]]; then
             echo "### 🔑 SSH Public Key" >> $GITHUB_STEP_SUMMARY
@@ -567,10 +483,6 @@ jobs:
           fi
 
           echo "### ⚠️ Important Notes" >> $GITHUB_STEP_SUMMARY
-          if [[ "${{ steps.modules.outputs.setup_code_server }}" == "true" ]]; then
-            echo "- Save the code-server password in a secure location" >> $GITHUB_STEP_SUMMARY
-            echo "- Code-server is running as: \`code-server@${{ inputs.target_user }}\`" >> $GITHUB_STEP_SUMMARY
-          fi
           if [[ "${{ steps.modules.outputs.setup_git_ssh }}" == "true" ]]; then
             echo "- The SSH private key remains on the server at \`~${{ inputs.target_user }}/.ssh/id_ed25519\`" >> $GITHUB_STEP_SUMMARY
           fi

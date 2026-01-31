@@ -69,18 +69,6 @@ location / {
 }
 EOF
 
-  cat > /etc/nginx/snippets/code-server-proxy.conf <<'EOF'
-location / {
-    proxy_pass http://127.0.0.1:$code_server_port;
-    include proxy_params;
-    proxy_http_version 1.1;
-    proxy_set_header Upgrade $http_upgrade;
-    proxy_set_header Connection "upgrade";
-    proxy_cache_bypass $http_upgrade;
-    proxy_buffering off;
-}
-EOF
-
   # Validate nginx configuration
   if ! nginx -t 2>/dev/null; then
     echo -e "${YELLOW}⚠️  Warning: Nginx configuration test failed${NC}"
