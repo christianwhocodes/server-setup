@@ -22,8 +22,8 @@ openssh_setup() {
   fi
 
   if command -v ufw >/dev/null 2>&1; then
-    # Check if OpenSSH rule already exists
-    if ! ufw status | grep -q "OpenSSH.*ALLOW"; then
+    # Check if OpenSSH rule already exists (check in both active status and added rules)
+    if ! ufw status | grep -q "OpenSSH.*ALLOW" && ! ufw show added | grep -q "ufw allow.*OpenSSH"; then
       echo -e "${YELLOW}Adding OpenSSH rule to UFW...${NC}"
       if ! ufw allow OpenSSH; then
         echo -e "${RED}⚠️  Warning: Failed to allow OpenSSH in ufw${NC}"
@@ -33,8 +33,8 @@ openssh_setup() {
       echo -e "${GREEN}✅ OpenSSH rule already exists in UFW${NC}"
     fi
     
-    # Verify the rule was actually added before enabling
-    if ufw status | grep -q "OpenSSH.*ALLOW"; then
+    # Verify the rule was actually added before enabling (check both status and added rules)
+    if ufw status | grep -q "OpenSSH.*ALLOW" || ufw show added | grep -q "ufw allow.*OpenSSH"; then
       if ufw status | grep -q "Status: inactive"; then
         echo -e "${YELLOW}Enabling UFW firewall...${NC}"
         if ! ufw --force enable; then
