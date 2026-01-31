@@ -123,6 +123,7 @@ When dispatching the workflow, you'll be prompted for these inputs:
 | setup_profile  | Yes      | -       | One of the four profiles                                                                                                                                                                                             |
 | git_user_name  | No       | -       | Required if Git/SSH module runs                                                                                                                                                                                      |
 | git_user_email | No       | -       | Required if Git/SSH module runs                                                                                                                                                                                      |
+| dry_run        | No       | false   | Dry run mode - simulates execution without making actual changes. Useful for validating configuration and logic before affecting the server.                                                                         |
 
 **Note:** There is no "create user" toggle—creation is automatic if the user does not exist.
 
@@ -279,7 +280,39 @@ Re-running with `"true"` does not break prior setup. Safe to add modules later b
 
 ---
 
-## 📚 Common Use Cases
+## � Dry Run Mode
+
+The workflow includes a **dry run mode** that simulates execution without making any actual changes to the server. This is useful for:
+
+- **Validation:** Verify configuration before running against production/development servers
+- **Debugging:** Test workflow logic without affecting server state
+- **Documentation:** Generate execution plans for review
+- **Training:** Understand what the workflow will do without risk
+
+### How to Use Dry Run
+
+Set the `dry_run` input to `true` when dispatching the workflow. The workflow will:
+
+- ✅ Connect to the server via SSH
+- ✅ Check current state (users, installed packages, etc.)
+- ✅ Display what actions would be taken
+- ❌ Not create users, install packages, or modify any files
+- ❌ Not enable services or change configurations
+
+All steps will output `[DRY RUN] Would...` messages instead of performing actual operations.
+
+### Example Output
+
+```
+[DRY RUN] Would create user: developer
+[DRY RUN] Would install necessary packages
+[DRY RUN] Would setup Nginx
+[DRY RUN] Would setup uv
+```
+
+---
+
+## �📚 Common Use Cases
 
 ### 1. New Full Development Server
 
