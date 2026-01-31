@@ -563,6 +563,11 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 👤 Configured User" >> $GITHUB_STEP_SUMMARY
           echo "- **User:** ${{ inputs.target_user }}" >> $GITHUB_STEP_SUMMARY
+          if [[ "${{ inputs.make_user_sudo }}" == "true" ]]; then
+            echo "- **Sudo Access:** ✅ Granted (passwordless)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **Sudo Access:** ❌ Not granted" >> $GITHUB_STEP_SUMMARY
+          fi
           echo "" >> $GITHUB_STEP_SUMMARY
 
           if [[ "${{ steps.modules.outputs.setup_git_ssh }}" == "true" && "${{ inputs.dry_run }}" != "true" ]]; then
